@@ -35,6 +35,8 @@ cd labio
 
 ### 2. 環境変数の設定
 
+#### 2.1 開発環境（`.env.local`）
+
 ```bash
 cp env.example .env.local
 ```
@@ -59,6 +61,20 @@ Supabaseの認証情報の取得方法：
 | anon public  | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Dashboard > Settings > API > Project API keys           |
 | service_role | `SUPABASE_SERVICE_ROLE_KEY`     | Dashboard > Settings > API > Project API keys（⚠️秘密） |
 | Reference ID | `SUPABASE_PROJECT_ID`           | Dashboard > Settings > General                          |
+
+#### 2.2 本番環境（Vercel）
+
+**重要**: `.env.local`は開発環境用です。本番環境（Vercel）でも環境変数を設定する必要があります。
+
+**設定手順**:
+1. [Vercel Dashboard](https://vercel.com/dashboard) > プロジェクト > Settings > Environment Variables
+2. 「Add New」をクリック
+3. `.env.local`の値をコピーして設定：
+   - `NEXT_PUBLIC_SUPABASE_URL` → Production, Preview, Development すべてにチェック
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY` → Production, Preview, Development すべてにチェック
+   - `SUPABASE_SERVICE_ROLE_KEY` → Production, Preview にチェック（Developmentは不要）
+
+詳細は [`ENV-SETUP.md`](./ENV-SETUP.md) を参照してください。
 
 ### 3. Makeコマンドの設定（Preztoユーザー向け）
 
