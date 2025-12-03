@@ -1,36 +1,87 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Labio
 
-## Getting Started
+大学の研究室DXを実現するSaaSプラットフォーム
 
-First, run the development server:
+## 概要
+
+Labioは、研究室における研究テーマの進捗管理、Activity（タスク・実験ノート・質問・面談など）の一元管理、AIによる自動要約・資料生成を通じて、学生が研究に没頭できる環境を提供します。
+
+## 技術スタック
+
+- **Frontend**: Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS
+- **Backend**: Supabase (PostgreSQL, Auth, Storage, Edge Functions, Realtime)
+- **Testing**: Vitest, Playwright
+- **CI/CD**: GitHub Actions, Vercel
+
+## クイックスタート
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# 環境変数の設定
+cp env.example .env.local
+# .env.local を編集してSupabaseの認証情報を設定
+
+# 起動
+make up
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+ブラウザで http://localhost:3000 を開く。
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+**詳細な環境構築手順は [開発環境構築ガイド](./docs/CONTRIBUTING.md) を参照してください。**
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 開発コマンド
 
-## Learn More
+すべてのコマンドはDockerコンテナ内で実行されます。
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+# 基本操作
+make up        # コンテナを起動
+make down      # コンテナを停止
+make logs      # ログを表示
+make shell     # コンテナ内でシェルを起動
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+# 開発ツール
+make lint      # Lint実行
+make format    # コードフォーマット
+make test      # テスト実行
+make typecheck # 型チェック
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+すべてのコマンドは `make help` で確認できます。
 
-## Deploy on Vercel
+## プロジェクト構造
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```
+labio/
+├── docs/                    # ドキュメント
+│   ├── CONTRIBUTING.md     # 環境構築ガイド
+│   ├── architecture.md     # 全体設計書
+│   └── specs/              # 仕様書
+│       ├── database/       # DB設計
+│       └── features/       # 機能仕様
+├── src/
+│   ├── app/                # Next.js App Router
+│   ├── components/         # UIコンポーネント
+│   ├── features/           # 機能（ドメインごと）
+│   ├── lib/                # 共通ライブラリ
+│   └── types/              # 型定義
+├── supabase/               # Supabase設定
+└── tests/                  # テスト
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## ドキュメント
+
+### 開発者向け
+
+- [**開発環境構築ガイド**](./docs/CONTRIBUTING.md) - 環境構築の詳細手順
+
+### 設計・仕様
+
+- [全体設計書](./docs/architecture.md)
+- [DBスキーマ設計](./docs/specs/database/schema.md)
+- [RLSポリシー設計](./docs/specs/database/rls-policies.md)
+- [認証機能仕様](./docs/specs/features/auth.md)
+- [Activity機能仕様](./docs/specs/features/activity.md)
+
+## ライセンス
+
+Private

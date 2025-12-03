@@ -1,0 +1,20 @@
+{
+  "mcpServers": {
+    "supabase": {
+      "command": ".cursor/load-env.sh",
+      "args": [
+        "npx",
+        "-y",
+        "@supabase/mcp-server-supabase@latest"
+      ]
+    },
+    "figma": {
+      "command": ".cursor/load-env.sh",
+      "args": [
+        "npx",
+        "-y",
+        "@modelcontextprotocol/server-figma@latest"
+      ]
+    }
+  }
+}

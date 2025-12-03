@@ -1,0 +1,200 @@
+# Labio プロジェクトルール
+
+## アーキテクチャ原則
+
+### UIとロジックの完全分離
+- **UIコンポーネント** (`src/components/`): 見た目のみ、ロジックは書かない
+- **機能ロジック** (`src/features/`): hooks/actions/typesで実装
+- UIコンポーネントは`features/`のhooksを呼び出すだけ
+
+### ディレクトリ構造
+```
+src/
+├── app/              # Next.js App Router（ページ）
+├── components/       # UIコンポーネント（見た目のみ）
+│   ├── ui/          # 共通UIパーツ（Button, Input等）
+│   └── [domain]/    # ドメイン別UI（activity, lab, project等）
+├── features/         # 機能ロジック（ドメインごと）
+│   └── [domain]/
+│       ├── hooks/   # カスタムフック
+│       ├── actions/ # Server Actions
+│       └── types/   # 型定義
+└── lib/             # 共通ライブラリ
+```
+
+### コーディング規約
+- TypeScript必須、型定義を明示的に記述
+- Tailwind CSSでスタイリング（インラインクラス）
+- コンポーネント名はPascalCase
+- ファイル名はコンポーネント名と同じ
+- テスト必須（Vitest）
+
+---
+
+## カスタムプロンプトテンプレート
+
+### 🎨 FigmaからUIコンポーネントを作成
+
+```
+以下のFigmaデザインをReactコンポーネントとして実装してください。
+
+【Figma URL】
+[ここにFigmaのURLを貼り付け]
+
+【要件】
+- コンポーネント名: [ComponentName]
+- 配置場所: src/components/[domain]/[ComponentName].tsx
+- スタイリング: Tailwind CSS（既存のデザインシステムに合わせる）
+- 型定義: TypeScriptで明示的に型を定義
+- ロジック分離: UIのみ実装し、ロジックはfeatures/[domain]/hooks/に分離
+
+【既存のデザインパターン】
+- カラーパレット: slate系（slate-900, slate-800, slate-700等）
+- アクセントカラー: emerald-400, cyan-500
+- ボーダー: border-slate-700
+- 角丸: rounded-xl（カード）、rounded-full（バッジ）
+
+【実装手順】
+1. Figma MCPでデザインを取得
+2. コンポーネント構造を分析
+3. UIコンポーネントを作成（src/components/[domain]/）
+4. 必要に応じてhooksを作成（src/features/[domain]/hooks/）
+5. 型定義を作成（src/features/[domain]/types/）
+6. テストを作成（tests/）
+```
+
+### 📄 既存ページを参考に新規ページを作成
+
+```
+既存のページを参考にしながら、新しいページを作成してください。
+
+【参考ページ】
+[既存のページファイルパスを指定、例: src/app/page.tsx]
+
+【新規ページ要件】
+- パス: [新しいパス、例: /dashboard]
+- ページファイル: src/app/[path]/page.tsx
+- レイアウト: [必要に応じて指定]
+- 機能: [実装する機能を説明]
+
+【実装方針】
+1. 既存ページのデザインパターンを分析
+2. 同じスタイルシステム（Tailwindクラス）を使用
+3. 必要に応じて共通コンポーネントを抽出
+4. features/にロジックを実装
+5. UIコンポーネントはcomponents/に配置
+
+【注意事項】
+- 既存のデザインシステムを維持
+- コンポーネントの再利用性を考慮
+- ロジックとUIを分離
+```
+
+### 🔧 機能実装テンプレート
+
+```
+[機能名]を実装してください。
+
+【要件】
+- 機能: [機能の説明]
+- ドメイン: [auth/activity/lab/project等]
+- ページ: [ページパス]
+
+【実装手順】
+1. **仕様書を更新または作成**（docs/specs/features/[domain].md）
+2. 型定義を作成（src/features/[domain]/types/）
+3. hooksを作成（src/features/[domain]/hooks/）
+4. Server Actionsを作成（src/features/[domain]/actions/）
+5. UIコンポーネントを作成（src/components/[domain]/）
+6. ページを作成（src/app/[path]/page.tsx）
+7. **テストを作成**（tests/unit/ または tests/e2e/）
+
+【仕様書】
+- [関連する仕様書のパスを指定、例: docs/specs/features/activity.md]
+- **必須**: 機能追加時は必ず仕様書を更新または作成する
+
+【データベース】
+- [使用するテーブルを指定]
+- RLSポリシーを確認
+- DB変更時は`docs/specs/database/schema.md`と`current-state.md`を更新
+
+【テスト】
+- **必須**: 機能追加時は必ずテストを作成する
+- 単体テスト: tests/unit/
+- E2Eテスト: tests/e2e/
+```
+
+---
+
+## 開発ワークフロー
+
+### 機能追加時の必須手順
+
+**重要**: 機能を追加する際は、必ず以下の3つをセットで追加してください：
+
+1. **実装**（コード）
+2. **ドキュメント**（仕様書の更新または作成）
+3. **テスト**（単体テストまたはE2Eテスト）
+
+#### チェックリスト
+
+- [ ] 機能仕様書を更新または作成（`docs/specs/features/[domain].md`）
+- [ ] コードを実装
+- [ ] テストを作成（`tests/unit/` または `tests/e2e/`）
+- [ ] DB変更時は`docs/specs/database/schema.md`と`current-state.md`を更新
+- [ ] API変更時は`docs/specs/api/api-design.md`を更新（必要に応じて）
+
+### Figma駆動開発
+1. FigmaでUIデザインを作成
+2. Figma MCPでデザインを取得
+3. **仕様書を確認または作成**
+4. UIコンポーネントを実装（components/）
+5. 必要に応じてhooksを作成（features/）
+6. **テストを作成**
+
+### 既存ページを参考にする開発
+1. 既存ページの構造を分析
+2. デザインパターンを抽出
+3. **仕様書を確認**
+4. 新規ページを実装（同じパターンを使用）
+5. 共通化できる部分をコンポーネント化
+6. **テストを作成**
+
+---
+
+## 重要な注意事項
+
+### ❌ やってはいけないこと
+- UIコンポーネント内にuseState、useEffect、API呼び出しを書く
+- 型定義を省略する
+- **機能追加時にテストを書かない**
+- **機能追加時にドキュメントを更新しない**
+- RLSポリシーを無視する
+
+### ✅ 必ずやること
+- UIとロジックを分離
+- TypeScriptの型を明示的に定義
+- **機能追加時は必ずテストを作成**（単体テストまたはE2Eテスト）
+- **機能追加時は必ずドキュメントを更新または作成**（仕様書）
+- 既存のデザインパターンに従う
+- 仕様書を確認してから実装
+- **機能追加時は「実装 + ドキュメント + テスト」をセットで追加**
+
+---
+
+## 技術スタック
+
+- **フレームワーク**: Next.js 16 (App Router)
+- **UI**: React 19, TypeScript 5
+- **スタイリング**: Tailwind CSS 4
+- **バックエンド**: Supabase (PostgreSQL, Auth, Storage)
+- **テスト**: Vitest (単体), Playwright (E2E)
+
+---
+
+## 参考ドキュメント
+
+- 全体設計: `docs/architecture.md`
+- 機能仕様: `docs/specs/features/`
+- DB設計: `docs/specs/database/`
+
