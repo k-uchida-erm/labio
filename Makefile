@@ -22,6 +22,7 @@ help:
 	@echo "  make test-e2e  - E2Eテストを実行"
 	@echo "  make typecheck - 型チェックを実行"
 	@echo "  make db-types  - Supabase型定義を生成"
+	@echo "  make setup-hooks - Gitフックをセットアップ"
 
 # =============================================================================
 # Docker コマンド
@@ -113,3 +114,11 @@ db-types:
 	@echo "Supabaseから型定義を自動生成中..."
 	@bash -c 'bash .cursor/load-env.sh sh -c "npx supabase gen types typescript --project-id ucsurbtmhabygssexisq" > src/types/database.types.ts'
 	@echo "✅ 型定義を生成しました: src/types/database.types.ts"
+
+# Gitフックをセットアップ
+# Dockerコンテナ内で実行する場合: make setup-hooks
+# 注意: Gitがインストールされている必要があります
+setup-hooks:
+	@echo "Gitフックをセットアップ中..."
+	@docker compose run --rm app sh -c "git config core.hooksPath .githooks && chmod +x .githooks/pre-commit"
+	@echo "✅ Gitフックをセットアップしました"

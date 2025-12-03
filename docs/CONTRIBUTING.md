@@ -1,6 +1,8 @@
 # 開発環境構築ガイド
 
-このドキュメントでは、Labioの開発環境をセットアップする方法を説明します。
+このドキュメントでは、Labioの開発環境をセットアップする方法と、開発に必要な詳細情報を説明します。
+
+**新規開発者の方は、このドキュメントを最初に読んでください。**
 
 ## 目次
 
@@ -33,9 +35,25 @@ git clone https://github.com/your-org/labio.git
 cd labio
 ```
 
-### 2. 環境変数の設定
+### 2. Gitフックのセットアップ
 
-#### 2.1 開発環境（`.env.local`）
+**重要**: DB変更時にマイグレーションファイルを忘れないように、Gitフックを有効化してください。
+
+**Dockerを使用する場合（推奨）**:
+```bash
+make setup-hooks
+```
+
+**Dockerを使用しない場合**:
+```bash
+npm run setup:hooks
+```
+
+これにより、コミット時に自動的にチェックが実行されます。
+
+### 3. 環境変数の設定
+
+#### 3.1 開発環境（`.env.local`）
 
 ```bash
 cp env.example .env.local
@@ -62,19 +80,6 @@ Supabaseの認証情報の取得方法：
 | service_role | `SUPABASE_SERVICE_ROLE_KEY`     | Dashboard > Settings > API > Project API keys（⚠️秘密） |
 | Reference ID | `SUPABASE_PROJECT_ID`           | Dashboard > Settings > General                          |
 
-#### 2.2 本番環境（Vercel）
-
-**重要**: `.env.local`は開発環境用です。本番環境（Vercel）でも環境変数を設定する必要があります。
-
-**設定手順**:
-1. [Vercel Dashboard](https://vercel.com/dashboard) > プロジェクト > Settings > Environment Variables
-2. 「Add New」をクリック
-3. `.env.local`の値をコピーして設定：
-   - `NEXT_PUBLIC_SUPABASE_URL` → Production, Preview, Development すべてにチェック
-   - `NEXT_PUBLIC_SUPABASE_ANON_KEY` → Production, Preview, Development すべてにチェック
-   - `SUPABASE_SERVICE_ROLE_KEY` → Production, Preview にチェック（Developmentは不要）
-
-詳細は [`ENV-SETUP.md`](./ENV-SETUP.md) を参照してください。
 
 ### 3. Makeコマンドの設定（Preztoユーザー向け）
 

@@ -379,7 +379,6 @@ docs/specs/
 │   ├── triggers-functions.md  # トリガー・関数設計
 │   └── current-state.md       # DB現在の状態（型定義生成方法含む）
 ├── pages-design.md            # ページ設計書（MVPロードマップ、ルーティング）
-└── mvp-essentials.md          # MVP必須項目チェックリスト
 ```
 
 詳細は [`docs/README.md`](./README.md) を参照
@@ -726,7 +725,7 @@ $$ LANGUAGE sql STABLE SECURITY DEFINER;
 
 ## 12. 開発ロードマップ
 
-詳細は [`docs/specs/pages-design.md`](./specs/pages-design.md) の「2. MVPロードマップ」と [`docs/specs/mvp-essentials.md`](./specs/mvp-essentials.md) を参照
+詳細は [`docs/specs/pages-design.md`](./specs/pages-design.md) の「2. MVPロードマップ」を参照
 
 ### 12.1 Phase 1: MVP（最小機能）
 

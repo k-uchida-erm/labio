@@ -1,0 +1,38 @@
+#!/bin/bash
+# Git pre-commit hook: DB変更時にマイグレーションファイルをチェック
+
+# ステージングされたファイルをチェック
+STAGED_FILES=$(git diff --cached --name-only)
+
+# database.types.tsが変更されたかチェック
+DB_TYPES_CHANGED=$(echo "$STAGED_FILES" | grep -E "^src/types/database\.types\.ts$" || true)
+
+if [ -n "$DB_TYPES_CHANGED" ]; then
+  # マイグレーションファイルが追加されたかチェック
+  NEW_MIGRATIONS=$(echo "$STAGED_FILES" | grep -E "^supabase/migrations/.*\.sql$" || true)
+  
+  if [ -z "$NEW_MIGRATIONS" ]; then
+    echo "❌ エラー: DB変更が検出されましたが、マイグレーションファイルが追加されていません！"
+    echo ""
+    echo "src/types/database.types.ts が変更されましたが、supabase/migrations/ に新しいマイグレーションファイルが追加されていません。"
+    echo ""
+    echo "【対処方法】"
+    echo "1. MCPでSQLを実行した場合:"
+    echo "   - Supabase Dashboard > Database > Migrations から最新のマイグレーションを取得"
+    echo "   - supabase/migrations/{timestamp}_{name}.sql として保存"
+    echo ""
+    echo "2. または、CLIで取得:"
+    echo "   bash .cursor/load-env.sh sh -c 'npx supabase db pull --linked'"
+    echo ""
+    echo "3. マイグレーションファイルをステージング:"
+    echo "   git add supabase/migrations/"
+    echo ""
+    echo "詳細: docs/DEPLOYMENT.md の「5.1 DB変更時の手順」を参照"
+    echo ""
+    echo "⚠️  コミットをスキップする場合は: git commit --no-verify"
+    exit 1
+  fi
+fi
+
+exit 0
+

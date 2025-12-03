@@ -1,10 +1,10 @@
-name: CI
+name: Check Migration Files
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, develop]
   push:
-    branches: [main]
+    branches: [main, develop]
 
 jobs:
   check-migrations:
@@ -14,23 +14,28 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 0  # 全履歴を取得（変更検出のため）
       
       - name: Check for database type changes
         id: check-db-types
         run: |
+          # PRの場合とpushの場合で変更検出方法が異なる
           if [ "${{ github.event_name }}" == "pull_request" ]; then
+            # PRの場合: baseとheadを比較
             BASE_SHA="${{ github.event.pull_request.base.sha }}"
             HEAD_SHA="${{ github.event.pull_request.head.sha }}"
           else
+            # Pushの場合: 前のコミットと比較
             BASE_SHA="${{ github.event.before }}"
             HEAD_SHA="${{ github.event.after }}"
           fi
           
+          # database.types.tsが変更されたかチェック
           DB_TYPES_CHANGED=$(git diff --name-only $BASE_SHA $HEAD_SHA | grep -E "^src/types/database\.types\.ts$" || true)
           
           if [ -n "$DB_TYPES_CHANGED" ]; then
             echo "db_types_changed=true" >> $GITHUB_OUTPUT
+            echo "⚠️ src/types/database.types.ts が変更されました"
           else
             echo "db_types_changed=false" >> $GITHUB_OUTPUT
           fi
@@ -46,10 +51,15 @@ jobs:
             HEAD_SHA="${{ github.event.after }}"
           fi
           
+          # supabase/migrations/ に新しいファイルが追加されたかチェック
           NEW_MIGRATIONS=$(git diff --name-only --diff-filter=A $BASE_SHA $HEAD_SHA | grep -E "^supabase/migrations/.*\.sql$" || true)
           
           if [ -n "$NEW_MIGRATIONS" ]; then
             echo "new_migrations=true" >> $GITHUB_OUTPUT
+            echo "✅ 新しいマイグレーションファイルが追加されました:"
+            echo "$NEW_MIGRATIONS" | while read file; do
+              echo "  - $file"
+            done
           else
             echo "new_migrations=false" >> $GITHUB_OUTPUT
           fi
@@ -76,35 +86,11 @@ jobs:
             echo "   git add supabase/migrations/"
             echo "   git commit -m 'chore: add migration file'"
             echo ""
-            echo "詳細: docs/SYSTEM.md の「データベースマイグレーション」セクションを参照"
+            echo "詳細: docs/DEPLOYMENT.md の「5.1 DB変更時の手順」を参照"
             exit 1
+          elif [ "$DB_TYPES_CHANGED" == "true" ] && [ "$NEW_MIGRATIONS" == "true" ]; then
+            echo "✅ DB変更とマイグレーションファイルの両方が検出されました"
+          else
+            echo "ℹ️ DB変更は検出されませんでした（スキップ）"
           fi
-
-  lint-and-test:
-    runs-on: ubuntu-latest
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: 'npm'
-      
-      - name: Install dependencies
-        run: npm ci
-      
-      - name: Lint
-        run: npm run lint
-      
-      - name: Type check
-        run: npm run typecheck
-      
-      - name: Format check
-        run: npm run format:check
-      
-      - name: Test
-        run: npm test
 

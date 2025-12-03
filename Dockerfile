@@ -3,6 +3,9 @@ FROM node:20-alpine
 
 WORKDIR /app
 
+# Install Git (for git hooks setup)
+RUN apk add --no-cache git
+
 # Install dependencies first (for caching)
 COPY package.json package-lock.json* ./
 RUN npm ci

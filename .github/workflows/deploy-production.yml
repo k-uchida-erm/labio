@@ -27,12 +27,15 @@ jobs:
       - name: Apply migrations to production
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-          SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID_PROD }}
+          SUPABASE_PROJECT_ID_PROD: ${{ secrets.SUPABASE_PROJECT_ID_PROD }}
         run: |
           # 本番環境にマイグレーションを適用
           # 注意: supabase/migrations/ にマイグレーションファイルが必要
           if [ -d "supabase/migrations" ] && [ "$(ls -A supabase/migrations)" ]; then
-            supabase db push --project-id $SUPABASE_PROJECT_ID_PROD
+            # 本番環境にリンク
+            npx supabase link --project-ref $SUPABASE_PROJECT_ID_PROD
+            # マイグレーションを適用
+            npx supabase db push
           else
             echo "⚠️ マイグレーションファイルが見つかりません。スキップします。"
           fi
@@ -40,7 +43,7 @@ jobs:
       - name: Generate TypeScript types from production
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-          SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID_PROD }}
+          SUPABASE_PROJECT_ID_PROD: ${{ secrets.SUPABASE_PROJECT_ID_PROD }}
         run: |
           # 本番環境から型定義を生成
           supabase gen types typescript --project-id $SUPABASE_PROJECT_ID_PROD > src/types/database.types.ts
