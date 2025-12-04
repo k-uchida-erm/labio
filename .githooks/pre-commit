@@ -1,8 +1,40 @@
-#!/bin/bash
-# Git pre-commit hook: DB変更時にマイグレーションファイルをチェック
+#!/bin/sh
+# Git pre-commit hook: 自動フォーマット・Lint修正・DB変更チェック
 
 # ステージングされたファイルをチェック
 STAGED_FILES=$(git diff --cached --name-only)
+
+# TypeScript/JavaScriptファイルが変更されたかチェック
+TS_JS_FILES=$(echo "$STAGED_FILES" | grep -E '\.(ts|tsx|js|jsx)$' || true)
+
+if [ -n "$TS_JS_FILES" ]; then
+  echo "🔧 自動フォーマット・Lint修正を実行中..."
+  
+  # Prettierで自動フォーマット（ステージングされたファイルのみ）
+  echo "  📝 Prettierでフォーマット中..."
+  echo "$TS_JS_FILES" | while IFS= read -r file; do
+    if [ -f "$file" ]; then
+      npx prettier --write "$file" 2>/dev/null || true
+    fi
+  done
+  
+  # ESLintで自動修正（ステージングされたファイルのみ）
+  echo "  🔍 ESLintで自動修正中..."
+  echo "$TS_JS_FILES" | while IFS= read -r file; do
+    if [ -f "$file" ]; then
+      npx eslint --fix "$file" 2>/dev/null || true
+    fi
+  done
+  
+  # 修正されたファイルを再度ステージング
+  echo "$TS_JS_FILES" | while IFS= read -r file; do
+    if [ -f "$file" ]; then
+      git add "$file" 2>/dev/null || true
+    fi
+  done
+  
+  echo "✅ 自動フォーマット・Lint修正が完了しました"
+fi
 
 # database.types.tsが変更されたかチェック
 DB_TYPES_CHANGED=$(echo "$STAGED_FILES" | grep -E "^src/types/database\.types\.ts$" || true)
@@ -27,7 +59,7 @@ if [ -n "$DB_TYPES_CHANGED" ]; then
     echo "3. マイグレーションファイルをステージング:"
     echo "   git add supabase/migrations/"
     echo ""
-    echo "詳細: docs/DEPLOYMENT.md の「5.1 DB変更時の手順」を参照"
+    echo "詳細: docs/SYSTEM.md の「データベースマイグレーション」セクションを参照"
     echo ""
     echo "⚠️  コミットをスキップする場合は: git commit --no-verify"
     exit 1

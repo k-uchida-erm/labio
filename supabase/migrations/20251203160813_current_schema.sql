@@ -1,12 +1,4 @@
--- Migration: Current Schema State
--- Generated: 2024-12-04
--- This migration contains the complete schema state including:
--- - ENUM types
--- - Tables
--- - Indexes
--- - Functions
--- - Triggers
--- - RLS Policies
+drop extension if exists "pg_net";
 
 create type "public"."activity_status" as enum ('todo', 'in_progress', 'in_review', 'done');
 
@@ -632,7 +624,7 @@ BEGIN
   IF NEW.status IS DISTINCT FROM OLD.status THEN
     SELECT COALESCE(MAX(position), 0) + 1 INTO max_position
     FROM activities
-    WHERE theme_id = NEW.theme_id AND status = NEW.status AND id != NEW.id AND deleted_at IS NULL;
+    WHERE project_id = NEW.project_id AND status = NEW.status AND id != NEW.id AND deleted_at IS NULL;
     NEW.position = max_position;
   END IF;
   RETURN NEW;
@@ -665,7 +657,7 @@ BEGIN
   IF NEW.position = 0 OR NEW.position IS NULL THEN
     SELECT COALESCE(MAX(position), 0) + 1 INTO max_position
     FROM activities
-    WHERE theme_id = NEW.theme_id AND status = NEW.status AND deleted_at IS NULL;
+    WHERE project_id = NEW.project_id AND status = NEW.status AND deleted_at IS NULL;
     NEW.position = max_position;
   END IF;
   RETURN NEW;
@@ -779,20 +771,6 @@ BEGIN
     UPDATE activities
     SET deleted_at = NOW()
     WHERE project_id = NEW.id AND deleted_at IS NULL;
-  END IF;
-  RETURN NEW;
-END;
-$function$
-;
-
-CREATE OR REPLACE FUNCTION public.soft_delete_theme_activities()
- RETURNS trigger
- LANGUAGE plpgsql
- SECURITY DEFINER
-AS $function$
-BEGIN
-  IF NEW.deleted_at IS NOT NULL AND OLD.deleted_at IS NULL THEN
-    UPDATE activities SET deleted_at = NOW() WHERE theme_id = NEW.id AND deleted_at IS NULL;
   END IF;
   RETURN NEW;
 END;
@@ -1789,5 +1767,4 @@ CREATE TRIGGER soft_delete_project_activities_trigger AFTER UPDATE ON public.pro
 CREATE TRIGGER update_projects_updated_at BEFORE UPDATE ON public.projects FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
 CREATE TRIGGER on_auth_user_created AFTER INSERT ON auth.users FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
-
 
