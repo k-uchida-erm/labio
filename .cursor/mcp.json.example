@@ -6,7 +6,10 @@
         "npx",
         "-y",
         "@supabase/mcp-server-supabase@latest"
-      ]
+      ],
+      "env": {
+        "SUPABASE_PROJECT_ID": "${SUPABASE_PROJECT_ID_LOCAL}"
+      }
     },
     "figma": {
       "command": ".cursor/load-env.sh",

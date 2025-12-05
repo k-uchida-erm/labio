@@ -3,12 +3,12 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Install Git (for git hooks setup)
-RUN apk add --no-cache git
+# Install Git (for git hooks setup) and Docker CLI (for Supabase CLI usage)
+RUN apk add --no-cache git docker-cli
 
 # Install dependencies first (for caching)
 COPY package.json package-lock.json* ./
-RUN npm ci
+RUN npm ci --legacy-peer-deps
 
 # Copy source code
 COPY . .

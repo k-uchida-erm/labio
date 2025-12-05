@@ -1,0 +1,160 @@
+name: Record DB Changes to Notion
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'supabase/migrations/**/*.sql'
+
+jobs:
+  record-to-notion:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect new migrations
+        id: detect-migrations
+        run: |
+          BASE_SHA="${{ github.event.before }}"
+          HEAD_SHA="${{ github.event.after }}"
+
+          NEW_MIGRATIONS=$(git diff --name-only --diff-filter=A "$BASE_SHA" "$HEAD_SHA" | grep -E "^supabase/migrations/.*\.sql$" || true)
+
+          if [ -n "$NEW_MIGRATIONS" ]; then
+            echo "migrations<<EOF" >> "$GITHUB_OUTPUT"
+            echo "$NEW_MIGRATIONS" >> "$GITHUB_OUTPUT"
+            echo "EOF" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create Notion pages
+        if: steps.detect-migrations.outputs.migrations != ''
+        env:
+          NOTION_API_TOKEN: ${{ secrets.NOTION_API_TOKEN }}
+          NOTION_DATABASE_ID: 2c0b7adc-d6a4-806a-87ae-c450d3ea60b3
+        run: |
+          echo "${{ steps.detect-migrations.outputs.migrations }}" | while IFS= read -r migration_file; do
+            [ -z "$migration_file" ] && continue
+            
+            filename=$(basename "$migration_file" .sql)
+            timestamp=$(echo "$filename" | cut -d'_' -f1)
+            name=$(echo "$filename" | cut -d'_' -f2-)
+            
+            branch="${{ github.ref_name }}"
+            commit_sha="${{ github.sha }}"
+            author="${{ github.actor }}"
+            
+            # ISO8601 timestamp (UTC, now)
+            now_iso=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+            
+            # Migration timestampをパース（YYYYMMDDHHMMSS形式）
+            if [ ${#timestamp} -eq 14 ]; then
+              migration_date="${timestamp:0:4}-${timestamp:4:2}-${timestamp:6:2}T${timestamp:8:2}:${timestamp:10:2}:${timestamp:12:2}Z"
+            else
+              migration_date="$now_iso"
+            fi
+            
+            # マイグレーションファイルの内容を解析して日本語要約を生成
+            summary=""
+            if [ -f "$migration_file" ]; then
+              # CREATE TABLEを検出（テーブル名のみ抽出）
+              create_tables=$(grep -iE "^\s*create\s+table" "$migration_file" | sed -E 's/.*"public"\."([^"]+)".*/\1/' | sort -u | tr '\n' ',' | sed 's/,$//')
+              if [ -n "$create_tables" ]; then
+                summary="${summary}📊 **テーブル作成**: ${create_tables}\n\n"
+              fi
+              
+              # ALTER TABLEを検出（テーブル名のみ抽出、重複除去）
+              alter_tables=$(grep -iE "^\s*alter\s+table" "$migration_file" | sed -E 's/.*"public"\."([^"]+)".*/\1/' | sort -u | tr '\n' ',' | sed 's/,$//')
+              if [ -n "$alter_tables" ]; then
+                summary="${summary}🔧 **テーブル変更**: ${alter_tables}\n\n"
+              fi
+              
+              # CREATE INDEXを検出（インデックス名のみ抽出、最初の10件のみ）
+              index_count=$(grep -iE "^\s*create\s+(unique\s+)?index" "$migration_file" | wc -l | tr -d ' ')
+              create_indexes=$(grep -iE "^\s*create\s+(unique\s+)?index" "$migration_file" | sed -E 's/.*create\s+(unique\s+)?index\s+"?([^"\s(]+)"?.*/\2/i' | sort -u | head -10 | tr '\n' ',' | sed 's/,$//')
+              if [ -n "$create_indexes" ] && [ "$create_indexes" != "create" ] && [ "$create_indexes" != "index" ] && [ "$create_indexes" != "unique" ]; then
+                if [ "$index_count" -gt 10 ]; then
+                  summary="${summary}📇 **インデックス作成**: ${create_indexes}... (他$((index_count - 10))件)\n\n"
+                else
+                  summary="${summary}📇 **インデックス作成**: ${create_indexes}\n\n"
+                fi
+              fi
+              
+              # CREATE FUNCTIONを検出（関数名のみ抽出）
+              create_functions=$(grep -iE "^\s*create\s+(or\s+replace\s+)?function" "$migration_file" | sed -E 's/.*"public"\."([^"]+)".*/\1/' | sort -u | tr '\n' ',' | sed 's/,$//')
+              if [ -n "$create_functions" ]; then
+                summary="${summary}⚙️ **関数作成**: ${create_functions}\n\n"
+              fi
+              
+              # CREATE TRIGGERを検出（トリガー名のみ抽出）
+              create_triggers=$(grep -iE "^\s*create\s+trigger" "$migration_file" | sed -E 's/.*create\s+trigger\s+"?([^"\s.]+)"?.*/\1/i' | sort -u | tr '\n' ',' | sed 's/,$//')
+              if [ -n "$create_triggers" ] && [ "$create_triggers" != "create" ] && [ "$create_triggers" != "trigger" ]; then
+                summary="${summary}🎯 **トリガー作成**: ${create_triggers}\n\n"
+              fi
+              
+              # DROPを検出
+              drop_items=$(grep -iE "^\s*drop\s+(table|index|function|trigger)" "$migration_file" | sed -E 's/.*"public"\."([^"]+)".*/\1/' | sort -u | tr '\n' ',' | sed 's/,$//')
+              if [ -n "$drop_items" ]; then
+                summary="${summary}🗑️ **削除**: ${drop_items}\n\n"
+              fi
+              
+              # 要約が空の場合はデフォルトメッセージ
+              if [ -z "$summary" ]; then
+                summary="📝 マイグレーションファイルが追加されました。\n"
+              fi
+            else
+              summary="📝 マイグレーションファイルが追加されました。\n"
+            fi
+            
+            echo "📝 Creating Notion page for: $name"
+            
+            # 要約をJSONエスケープ（改行は\nとして保持）
+            summary_escaped=$(echo -e "$summary" | sed 's/\\/\\\\/g' | sed 's/"/\\"/g' | sed ':a;N;$!ba;s/\n/\\n/g')
+            
+            # childrenブロックを構築（要約をparagraphブロックとして追加）
+            if [ -n "$summary" ]; then
+              children_block=",\"children\":[{\"object\":\"block\",\"type\":\"paragraph\",\"paragraph\":{\"rich_text\":[{\"type\":\"text\",\"text\":{\"content\":\"$summary_escaped\"}}]}}]"
+            else
+              children_block=""
+            fi
+            
+            curl -X POST https://api.notion.com/v1/pages \
+              -H "Authorization: Bearer $NOTION_API_TOKEN" \
+              -H "Content-Type: application/json" \
+              -H "Notion-Version: 2022-06-28" \
+              -d "{
+                \"parent\": {
+                  \"type\": \"database_id\",
+                  \"database_id\": \"$NOTION_DATABASE_ID\"
+                },
+                \"properties\": {
+                  \"Migration File\": {
+                    \"title\": [
+                      { \"text\": { \"content\": \"$name\" } }
+                    ]
+                  },
+                  \"Timestamp\": {
+                    \"date\": { \"start\": \"$migration_date\" }
+                  },
+                  \"Branch\": {
+                    \"rich_text\": [
+                      { \"text\": { \"content\": \"$branch\" } }
+                    ]
+                  },
+                  \"Commit SHA\": {
+                    \"rich_text\": [
+                      { \"text\": { \"content\": \"$commit_sha\" } }
+                    ]
+                  },
+                  \"Author\": {
+                    \"rich_text\": [
+                      { \"text\": { \"content\": \"$author\" } }
+                    ]
+                  }
+                }${children_block}
+              }" || echo "⚠️ Failed to create Notion page for $name"
+          done
+

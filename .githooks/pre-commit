@@ -39,8 +39,19 @@ fi
 # database.types.tsが変更されたかチェック
 DB_TYPES_CHANGED=$(echo "$STAGED_FILES" | grep -E "^src/types/database\.types\.ts$" || true)
 
+# Supabase型定義を毎回生成してステージング
+if command -v npx >/dev/null 2>&1; then
+  echo "🧬 Supabase型定義を生成中..."
+  if [ -x ".cursor/load-env.sh" ]; then
+    bash .cursor/load-env.sh sh -c 'npx supabase gen types typescript --project-id ucsurbtmhabygssexisq > src/types/database.types.ts'
+  else
+    npx supabase gen types typescript --project-id ucsurbtmhabygssexisq > src/types/database.types.ts
+  fi
+  git add src/types/database.types.ts 2>/dev/null || true
+fi
+
+# DB型が変わったらマイグレ必須
 if [ -n "$DB_TYPES_CHANGED" ]; then
-  # マイグレーションファイルが追加されたかチェック
   NEW_MIGRATIONS=$(echo "$STAGED_FILES" | grep -E "^supabase/migrations/.*\.sql$" || true)
   
   if [ -z "$NEW_MIGRATIONS" ]; then
@@ -66,5 +77,33 @@ if [ -n "$DB_TYPES_CHANGED" ]; then
   fi
 fi
 
-exit 0
+# 危険なDDL（DROP/TRUNCATEなど）を含むマイグレーションをブロック
+MIGRATION_FILES=$(echo "$STAGED_FILES" | grep -E "^supabase/migrations/.*\.sql$" || true)
 
+if [ -n "$MIGRATION_FILES" ]; then
+  DANGEROUS_PATTERN='(^|[[:space:]])(DROP[[:space:]]+(TABLE|VIEW|INDEX|SEQUENCE|FUNCTION|TRIGGER|COLUMN|CONSTRAINT)|TRUNCATE[[:space:]]+TABLE)'
+  DANGEROUS_HITS=""
+
+  echo "$MIGRATION_FILES" | while IFS= read -r file; do
+    if [ -n "$file" ]; then
+      # ステージ済み内容をチェック
+      if git show ":$file" | grep -Eqi "$DANGEROUS_PATTERN"; then
+        DANGEROUS_HITS="$DANGEROUS_HITS$file\n"
+      fi
+    fi
+  done
+
+  if [ -n "$DANGEROUS_HITS" ]; then
+    echo "❌ エラー: 危険なDDLが含まれるマイグレーションを検出しました。"
+    printf "対象ファイル:\n$DANGEROUS_HITS"
+    echo ""
+    echo "【対処例】"
+    echo "- カラム名変更は RENAME COLUMN に書き換え（DROP/ADD を避ける）"
+    echo "- 不要な TRUNCATE/DROP を削除するかデータ退避を検討"
+    echo ""
+    echo "⚠️  本当に破壊的変更が必要な場合でも、レビューのうえでコメントを残すなど慎重に対応してください。"
+    exit 1
+  fi
+fi
+
+exit 0

@@ -17,7 +17,6 @@
 | [specs/pages-design.md](./specs/pages-design.md)                               | **ページ設計書**（MVPロードマップ、ページ一覧） |
 | [specs/api/api-design.md](./specs/api/api-design.md)                         | **API設計書**（実装方式の選択基準） |
 | [specs/database/schema.md](./specs/database/schema.md)                         | DBスキーマ設計     |
-| [specs/database/current-state.md](./specs/database/current-state.md)           | DB現在の状態       |
 | [specs/database/rls-policies.md](./specs/database/rls-policies.md)             | RLSポリシー設計    |
 | [specs/database/triggers-functions.md](./specs/database/triggers-functions.md) | トリガー・関数設計 |
 | [specs/features/auth.md](./specs/features/auth.md)                             | 認証機能仕様       |

@@ -39,46 +39,40 @@ cd labio
 
 **重要**: DB変更時にマイグレーションファイルを忘れないように、Gitフックを有効化してください。
 
-**Dockerを使用する場合（推奨）**:
 ```bash
 make setup-hooks
 ```
+コミット時に自動チェックが実行されます。
 
-**Dockerを使用しない場合**:
-```bash
-npm run setup:hooks
-```
+### 3. 環境変数の設定（ローカルSupabaseをデフォルトにする）
 
-これにより、コミット時に自動的にチェックが実行されます。
-
-### 3. 環境変数の設定
-
-#### 3.1 開発環境（`.env.local`）
-
+1) ローカル用（基本これを使う）
 ```bash
 cp env.example .env.local
 ```
-
-`.env.local` を編集して、Supabaseの認証情報を設定：
-
+`.env.local` にローカルSupabaseのURL/キーを入れる（`supabase start` 時に表示される値）:
 ```env
-# Supabase（必須）
-NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
-
-# Supabase（サーバーサイドのみ）
-SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
-SUPABASE_PROJECT_ID=your-project-id
+NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<local anon>
+SUPABASE_SERVICE_ROLE_KEY=<local service_role>
+# SUPABASE_PROJECT_ID はローカルでは任意（空で可）
 ```
 
-Supabaseの認証情報の取得方法：
+2) 共有開発環境（例: develop/labio-dev）を使う場合
+```bash
+cp env.develop.example .env.develop
+```
+`.env.develop` にリモートの URL / anon / service_role / project_id を入れておく。使うときだけ下記コマンドで切替。
 
-| 項目         | 環境変数                        | 取得場所                                                |
-| ------------ | ------------------------------- | ------------------------------------------------------- |
-| Project URL  | `NEXT_PUBLIC_SUPABASE_URL`      | Dashboard > Settings > API > Project URL                |
-| anon public  | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Dashboard > Settings > API > Project API keys           |
-| service_role | `SUPABASE_SERVICE_ROLE_KEY`     | Dashboard > Settings > API > Project API keys（⚠️秘密） |
-| Reference ID | `SUPABASE_PROJECT_ID`           | Dashboard > Settings > General                          |
+3) 環境切替（Make でワンコマンド）
+- `make env-use-develop` : `.env.local` を退避し、`.env.develop` を `.env.local` に適用
+- `make env-restore-local`: 退避しておいた `.env.local.backup` を戻す
+
+#### DB接続ポリシー
+- デフォルト: `.env.local` でローカルSupabase（127.0.0.1:54321）を使う
+- 共有開発環境（develop/labio-devなど）: `.env.develop` を用意し、必要時のみ `make env-use-develop` で一時切替。終わったら `make env-restore-local` で戻す
+- ローカルSupabaseの起動/停止: `make supabase-start` / `make supabase-stop`
+- ブランチと接続先: `develop` は `labio-dev` に接続、`main` は `labio-pro` に接続（本番）
 
 
 ### 3. Makeコマンドの設定（Preztoユーザー向け）
@@ -99,7 +93,21 @@ source ~/.zshrc
 
 > **Note**: Preztoを使用していない場合、この手順は不要です。
 
-### 4. 起動
+### 4. ローカルSupabaseと起動
+
+ローカルDBを最新化してから起動するフロー（推奨）:
+
+```bash
+make supabase-start   # ローカルSupabase起動（Docker内でsupabase CLI使用）
+make supabase-reset   # repoのマイグレを全部適用してローカルDBを初期化
+make up               # Next.js開発サーバー起動
+```
+
+終了時:
+```bash
+make supabase-stop
+make down
+```
 
 ```bash
 make up
@@ -111,7 +119,7 @@ make up
 
 ## 開発コマンド
 
-すべてのコマンドはDockerコンテナ内で実行されます。
+すべてのコマンドはDockerコンテナ内で実行されます（ホストにCLI不要）。
 
 ### 基本操作
 
@@ -140,6 +148,15 @@ make db-types     # Supabase型定義を生成
 ```
 
 すべてのコマンドは `make help` で確認できます。
+
+## 開発フロー（ブランチ〜デプロイ）
+1. ブランチを切る: `develop` から `feature/aa_bb`（タスク名をスネークケース）を作成
+2. UI実装は Figma / 既存ページを参照し、コード上で0から新デザインを作らない
+3. DB変更はローカルSupabaseを MCP（PostgreSQL MCP: `supabase_local_pg`）で操作し、`supabase db diff -f <name>` でマイグレ生成。pre-commitで型生成・DROP/TRUNCATEチェック・マイグレ有無チェックが走る
+4. テスト・Lint等を実行（必要に応じて `make test` など）
+5. PR作成 → CodeRabbitレビュー → 指摘対応
+6. develop へマージすると labio-dev でマイグレ適用（CI）、develop環境で動作確認したい場合は `make env-use-develop` で `.env.local` を切替えてテスト
+7. main へマージすると labio-pro に紐づき、本番用環境変数は GitHub Secrets から注入され Vercel に自動デプロイ
 
 ### 依存関係の追加
 

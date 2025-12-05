@@ -189,8 +189,6 @@ alter table "public"."tags" enable row level security;
 
 CREATE UNIQUE INDEX activities_lab_id_project_id_sequence_number_unique ON public.activities USING btree (lab_id, project_id, sequence_number);
 
-CREATE UNIQUE INDEX activities_lab_project_sequence_unique ON public.activities USING btree (lab_id, project_id, sequence_number);
-
 CREATE UNIQUE INDEX activities_pkey ON public.activities USING btree (id);
 
 CREATE UNIQUE INDEX activity_tags_activity_id_tag_id_key ON public.activity_tags USING btree (activity_id, tag_id);
@@ -332,8 +330,6 @@ alter table "public"."activities" add constraint "activities_lab_id_fkey" FOREIG
 alter table "public"."activities" validate constraint "activities_lab_id_fkey";
 
 alter table "public"."activities" add constraint "activities_lab_id_project_id_sequence_number_unique" UNIQUE using index "activities_lab_id_project_id_sequence_number_unique";
-
-alter table "public"."activities" add constraint "activities_lab_project_sequence_unique" UNIQUE using index "activities_lab_project_sequence_unique";
 
 alter table "public"."activities" add constraint "activities_project_id_fkey" FOREIGN KEY (project_id) REFERENCES public.projects(id) ON DELETE CASCADE not valid;
 

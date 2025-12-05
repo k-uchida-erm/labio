@@ -174,22 +174,31 @@ supabase/migrations/
 
 ## 🔐 環境変数管理
 
-### 開発環境（`.env.local`）
+### 開発環境（`.env.local` / `.env.develop`）
 
-**場所**: プロジェクトルートの`.env.local`（Gitにコミットしない）
+**場所**: プロジェクトルート（Gitにコミットしない）
 
-**必要な環境変数**:
+**ローカルSupabase（デフォルト）**:
 ```env
-# Supabase（開発環境）
-NEXT_PUBLIC_SUPABASE_URL=https://ucsurbtmhabygssexisq.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-dev-anon-key
-SUPABASE_SERVICE_ROLE_KEY=your-dev-service-role-key
-SUPABASE_PROJECT_ID=ucsurbtmhabygssexisq
+NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<local anon>
+SUPABASE_SERVICE_ROLE_KEY=<local service_role>
+# SUPABASE_PROJECT_ID はローカルでは任意（空でも可）
 
-# MCP用（オプション）
-SUPABASE_ACCESS_TOKEN=your-access-token
-FIGMA_ACCESS_TOKEN=your-figma-token
+# MCP用（任意）
+SUPABASE_ACCESS_TOKEN=<your supabase access token>
+FIGMA_ACCESS_TOKEN=<your figma token>
 ```
+
+**共有開発（例: labio-dev）を使う場合**:
+```env
+# .env.develop にリモートのURL/キーを入れる（コミットしない）
+NEXT_PUBLIC_SUPABASE_URL=https://<develop>.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<develop anon>
+SUPABASE_SERVICE_ROLE_KEY=<develop service_role>
+SUPABASE_PROJECT_ID=<develop project id>
+```
+切替は `make env-use-develop`（一時的に develop を適用）/`make env-restore-local`（ローカルに戻す）で行う。
 
 ### 本番環境（Vercel）
 
@@ -204,9 +213,17 @@ SUPABASE_SERVICE_ROLE_KEY=your-prod-service-role-key
 ```
 
 **環境**:
-- Production: 本番環境用
-- Preview: PRごとのPreview環境用
-- Development: ローカル開発用（通常は開発環境と同じ値）
+- Production: 本番環境（main → labio-pro）
+- Preview: PRごとのPreview環境
+- Development: ローカル開発（デフォルトはローカルSupabase／必要時のみ develop = labio-dev に切替）
+
+## 🚀 開発フロー概要（運用）
+- ブランチ戦略: `develop` から `feature/aa_bb`（タスク名をスネークケース）を切る。`develop` は labio-dev、`main` は labio-pro に接続
+- UI: Figmaまたは既存ページを参照し、コード上で0から新デザインを作らない
+- DB: ローカルSupabaseを MCP（PostgreSQL MCP: `supabase_local_pg`）で操作し、`supabase db diff -f <name>` でマイグレ化。pre-commit で型生成と危険DDLチェック（DROP/TRUNCATE）およびマイグレ有無チェック
+- テスト: 必要に応じ `make test` などを実行
+- レビュー: PR → CodeRabbit → 指摘対応 → develop へマージ（labio-devにマイグレ適用）
+- 本番: main へマージで labio-pro、本番用環境変数は GitHub Secrets から注入され Vercel に自動デプロイ
 
 ---
 
