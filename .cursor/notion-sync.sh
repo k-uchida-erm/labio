@@ -181,9 +181,9 @@ echo "$STAGED_MIGRATIONS" | while IFS= read -r migration_file; do
         if [ -n "$bold_text" ] && [ "$bold_text" != "$remaining" ]; then
           bold_escaped=$(printf "%s" "$bold_text" | sed 's/\\/\\\\/g' | sed 's/"/\\"/g')
           if [ -z "$rich_text_array" ]; then
-            rich_text_array="{\"type\":\"text\",\"text\":{\"content\":\"$bold_escaped\",\"annotations\":{\"bold\":true}}}"
+            rich_text_array="{\"type\":\"text\",\"text\":{\"content\":\"$bold_escaped\"},\"annotations\":{\"bold\":true}}"
           else
-            rich_text_array="$rich_text_array,{\"type\":\"text\",\"text\":{\"content\":\"$bold_escaped\",\"annotations\":{\"bold\":true}}}"
+            rich_text_array="$rich_text_array,{\"type\":\"text\",\"text\":{\"content\":\"$bold_escaped\"},\"annotations\":{\"bold\":true}}"
           fi
         fi
         
