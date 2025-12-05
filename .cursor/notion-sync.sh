@@ -145,12 +145,83 @@ echo "$STAGED_MIGRATIONS" | while IFS= read -r migration_file; do
     summary="📝 マイグレーションファイルが追加されました。\n"
   fi
   
-  # 要約をJSONエスケープ（改行を\nに変換）
-  summary_escaped=$(printf "%s" "$summary" | sed 's/\\/\\\\/g' | sed 's/"/\\"/g' | sed 's/$/\\n/' | tr -d '\n' | sed 's/\\n$//')
-  
-  # childrenブロックを構築
+  # childrenブロックを構築（\n\nで分割して各段落を別のparagraphブロックにし、Markdown記法を変換）
   if [ -n "$summary" ]; then
-    children_block=",\"children\":[{\"object\":\"block\",\"type\":\"paragraph\",\"paragraph\":{\"rich_text\":[{\"type\":\"text\",\"text\":{\"content\":\"$summary_escaped\"}}]}}]"
+    # 一時ファイルを使って段落を分割
+    temp_file=$(mktemp)
+    printf "%s" "$summary" | awk 'BEGIN{RS="\n\n"} {if (NF > 0) print}' > "$temp_file"
+    
+    children_blocks=""
+    while IFS= read -r paragraph || [ -n "$paragraph" ]; do
+      [ -z "$paragraph" ] && continue
+      # 段落内の\nを削除して単一行に
+      paragraph_clean=$(echo "$paragraph" | tr -d '\n' | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//')
+      [ -z "$paragraph_clean" ] && continue
+      
+      # Markdown記法（**text**）をNotion APIのrich_text形式に変換
+      # シンプルな実装：**text**を太字として処理
+      rich_text_array=""
+      remaining="$paragraph_clean"
+      
+      # **text**パターンを検出して処理
+      while echo "$remaining" | grep -qE '\*\*[^*]+\*\*'; do
+        # **text**の前の部分
+        before=$(echo "$remaining" | sed -E 's/(\*\*[^*]+\*\*).*/\1/' | sed -E 's/\*\*[^*]+\*\*$//')
+        if [ -n "$before" ]; then
+          before_escaped=$(printf "%s" "$before" | sed 's/\\/\\\\/g' | sed 's/"/\\"/g')
+          if [ -z "$rich_text_array" ]; then
+            rich_text_array="{\"type\":\"text\",\"text\":{\"content\":\"$before_escaped\"}}"
+          else
+            rich_text_array="$rich_text_array,{\"type\":\"text\",\"text\":{\"content\":\"$before_escaped\"}}"
+          fi
+        fi
+        
+        # **text**の部分（太字）
+        bold_text=$(echo "$remaining" | sed -E 's/.*\*\*([^*]+)\*\*.*/\1/')
+        if [ -n "$bold_text" ] && [ "$bold_text" != "$remaining" ]; then
+          bold_escaped=$(printf "%s" "$bold_text" | sed 's/\\/\\\\/g' | sed 's/"/\\"/g')
+          if [ -z "$rich_text_array" ]; then
+            rich_text_array="{\"type\":\"text\",\"text\":{\"content\":\"$bold_escaped\",\"annotations\":{\"bold\":true}}}"
+          else
+            rich_text_array="$rich_text_array,{\"type\":\"text\",\"text\":{\"content\":\"$bold_escaped\",\"annotations\":{\"bold\":true}}}"
+          fi
+        fi
+        
+        # 残りの部分
+        remaining=$(echo "$remaining" | sed -E 's/.*\*\*[^*]+\*\*//')
+      done
+      
+      # 残りのテキストを追加
+      if [ -n "$remaining" ]; then
+        remaining_escaped=$(printf "%s" "$remaining" | sed 's/\\/\\\\/g' | sed 's/"/\\"/g')
+        if [ -z "$rich_text_array" ]; then
+          rich_text_array="{\"type\":\"text\",\"text\":{\"content\":\"$remaining_escaped\"}}"
+        else
+          rich_text_array="$rich_text_array,{\"type\":\"text\",\"text\":{\"content\":\"$remaining_escaped\"}}"
+        fi
+      fi
+      
+      # rich_text_arrayが空の場合は、そのまま追加
+      if [ -z "$rich_text_array" ]; then
+        paragraph_escaped=$(printf "%s" "$paragraph_clean" | sed 's/\\/\\\\/g' | sed 's/"/\\"/g')
+        rich_text_array="{\"type\":\"text\",\"text\":{\"content\":\"$paragraph_escaped\"}}"
+      fi
+      
+      # paragraphブロックを作成
+      if [ -z "$children_blocks" ]; then
+        children_blocks="{\"object\":\"block\",\"type\":\"paragraph\",\"paragraph\":{\"rich_text\":[$rich_text_array]}}"
+      else
+        children_blocks="$children_blocks,{\"object\":\"block\",\"type\":\"paragraph\",\"paragraph\":{\"rich_text\":[$rich_text_array]}}"
+      fi
+    done < "$temp_file"
+    
+    rm -f "$temp_file"
+    
+    if [ -n "$children_blocks" ]; then
+      children_block=",\"children\":[$children_blocks]"
+    else
+      children_block=""
+    fi
   else
     children_block=""
   fi
