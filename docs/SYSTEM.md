@@ -121,44 +121,41 @@ supabase/migrations/
 
 ### マイグレーションの作成方法
 
-#### 方法1: MCPで直接SQL実行 → マイグレーションファイルを後から取得（推奨）
+#### マイグレーションファイルを直接作成
 
-1. **MCPで開発環境にSQLを実行**
+1. **マイグレーションファイルを作成**
+   ```bash
+   npx supabase migration new migration_name
    ```
-   「開発環境のSupabaseにSQLを実行して: [SQL文]」
-   → mcp_supabase_execute_sql を実行
+   例: `npx supabase migration new add_user_table`
+
+2. **SQLを直接書く**
+   ```sql
+   -- supabase/migrations/20251205111107_add_user_table.sql
+   CREATE TABLE public.users (
+     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+     name TEXT NOT NULL,
+     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+   );
    ```
 
-2. **動作確認**
-   - 開発環境で動作確認
-
-3. **マイグレーションファイルを取得**
-   - **方法A**: Supabase Dashboard > Database > Migrations から取得
-   - **方法B**: `bash .cursor/load-env.sh sh -c 'npx supabase db pull --linked'`
+3. **ローカルDBに適用して動作確認**
+   ```bash
+   npx supabase db reset --local
+   # または
+   make supabase-reset
+   ```
 
 4. **マイグレーションファイルをコミット**
    ```bash
    git add supabase/migrations/
-   git commit -m "feat: add new column"
+   git commit -m "feat: add user table"
    git push
    ```
+   > **注意**: pre-commitフックが自動的に型定義を生成・ステージングします
 
 5. **mainブランチにマージ**
    - GitHub Actionsが自動的に本番環境にマイグレーションを適用
-
-#### 方法2: マイグレーションファイルを先に作成
-
-1. **マイグレーションファイルを作成**
-   ```bash
-   bash .cursor/load-env.sh sh -c 'npx supabase db diff --linked -f migration_name'
-   ```
-
-2. **開発環境に適用**
-   ```bash
-   bash .cursor/load-env.sh sh -c 'npx supabase db push'
-   ```
-
-3. **以降は方法1と同じ**（コミット・プッシュ・マージ）
 
 ### 自動チェック
 
@@ -220,7 +217,7 @@ SUPABASE_SERVICE_ROLE_KEY=your-prod-service-role-key
 ## 🚀 開発フロー概要（運用）
 - ブランチ戦略: `develop` から `feature/aa_bb`（タスク名をスネークケース）を切る。`develop` は labio-dev、`main` は labio-pro に接続
 - UI: Figmaまたは既存ページを参照し、コード上で0から新デザインを作らない
-- DB: ローカルSupabaseを MCP（PostgreSQL MCP: `supabase_local_pg`）で操作し、`supabase db diff -f <name>` でマイグレ化。pre-commit で型生成と危険DDLチェック（DROP/TRUNCATE）およびマイグレ有無チェック
+- DB: マイグレーションファイルを直接作成（`npx supabase migration new`）。MCP（`mcp_supabase_local_pg_query`）は読み取り専用で使用。pre-commit で型生成と危険DDLチェック（DROP/TRUNCATE）およびマイグレ有無チェック
 - テスト: 必要に応じ `make test` などを実行
 - レビュー: PR → CodeRabbit → 指摘対応 → develop へマージ（labio-devにマイグレ適用）
 - 本番: main へマージで labio-pro、本番用環境変数は GitHub Secrets から注入され Vercel に自動デプロイ
@@ -288,8 +285,9 @@ make build     # イメージをビルド
 - Figma MCP: `FIGMA_ACCESS_TOKEN`を設定（デザイナーのみ）
 
 **使用方法**:
-- Cursorから直接SupabaseにSQLを実行可能
-- FigmaデザインからReactコンポーネントを自動生成可能
+- Supabase MCP（`mcp_supabase_local_pg_query`）: ローカルSupabaseに対して読み取り専用クエリを実行（テーブル構造の確認など）
+- Figma MCP: FigmaデザインからReactコンポーネントを自動生成可能
+- **注意**: DB書き込みはマイグレーションファイルを直接作成（MCPでは書き込み不可）
 
 ---
 
@@ -300,11 +298,11 @@ make build     # イメージをビルド
 ```
 開発者
   ↓
-1. MCPで開発環境にSQL実行
+1. マイグレーションファイルを作成（`npx supabase migration new`）
   ↓
-2. 動作確認
+2. SQLを直接書く
   ↓
-3. マイグレーションファイルを取得
+3. ローカルDBに適用して動作確認
   ↓
 4. コミット・プッシュ
   ↓

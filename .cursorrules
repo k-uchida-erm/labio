@@ -162,20 +162,23 @@ src/
 5. 共通化できる部分をコンポーネント化
 6. **テストを作成**
 
-### DB変更時の必須手順（MCP使用時）
+### DB変更時の必須手順
 
-**重要**: MCPでSQLを実行した後は、**必ずマイグレーションファイルを取得してコミットする**。これを忘れると本番環境に自動適用されません。
+**重要**: DB変更時は、**必ずマイグレーションファイルを作成してコミットする**。これを忘れると本番環境に自動適用されません。
 
 **自動チェック**: Gitフック（pre-commit）とGitHub Actions CIが自動的にチェックします。`src/types/database.types.ts`が変更された場合、`supabase/migrations/`に新しいファイルが追加されていないと、コミットやPRが拒否されます。
 
 #### チェックリスト
 
-- [ ] MCPで開発環境にSQLを実行（`mcp_supabase_execute_sql` または `mcp_supabase_apply_migration`）
-- [ ] 動作確認（開発環境でテスト）
-- [ ] **マイグレーションファイルを取得**（Supabase Dashboard > Database > Migrations から取得、または `bash .cursor/load-env.sh sh -c 'npx supabase db pull --linked'`）
-- [ ] `supabase/migrations/{timestamp}_{name}.sql`として保存
+- [ ] マイグレーションファイルを作成（`npx supabase migration new migration_name`）
+- [ ] SQLを直接書く（`supabase/migrations/{timestamp}_{name}.sql`）
+- [ ] ローカルDBに適用して動作確認（`npx supabase db reset --local` または `make supabase-reset`）
 - [ ] マイグレーションファイルをコミット・プッシュ
 - [ ] mainブランチにマージ（GitHub Actionsが本番環境に自動適用）
+
+**MCPの使用**:
+- MCP（`mcp_supabase_local_pg_query`）は読み取り専用で使用（テーブル構造の確認など）
+- 書き込みはマイグレーションファイルを直接作成
 
 **詳細**: `docs/SYSTEM.md` の「データベースマイグレーション」セクションを参照
 

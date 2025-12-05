@@ -152,7 +152,7 @@ make db-types     # Supabase型定義を生成
 ## 開発フロー（ブランチ〜デプロイ）
 1. ブランチを切る: `develop` から `feature/aa_bb`（タスク名をスネークケース）を作成
 2. UI実装は Figma / 既存ページを参照し、コード上で0から新デザインを作らない
-3. DB変更はローカルSupabaseを MCP（PostgreSQL MCP: `supabase_local_pg`）で操作し、`supabase db diff -f <name>` でマイグレ生成。pre-commitで型生成・DROP/TRUNCATEチェック・マイグレ有無チェックが走る
+3. DB変更はマイグレーションファイルを直接作成（`npx supabase migration new`）。MCP（`mcp_supabase_local_pg_query`）は読み取り専用で使用。pre-commitで型生成・DROP/TRUNCATEチェック・マイグレ有無チェックが走る
 4. テスト・Lint等を実行（必要に応じて `make test` など）
 5. PR作成 → CodeRabbitレビュー → 指摘対応
 6. develop へマージすると labio-dev でマイグレ適用（CI）、develop環境で動作確認したい場合は `make env-use-develop` で `.env.local` を切替えてテスト
@@ -298,10 +298,10 @@ Cursorで以下を入力して、MCPが動作するか確認：
 ### 4. 使用例
 
 ```
-# Supabase操作
-「labioプロジェクトのテーブル一覧を見せて」
+# Supabase操作（読み取り専用）
 「activitiesテーブルの構造を教えて」
-「新しいマイグレーションを適用して」
+「テーブル一覧を見せて」
+「カラムの型を確認して」
 
 # Figma操作
 「このFigmaのデザインをReactコンポーネントにして」

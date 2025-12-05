@@ -137,7 +137,8 @@ supabase-stop:
 supabase-reset: supabase-start
 	npx supabase db reset
 
-# labio-devのスキーマをpullしてローカルに反映する（マイグレーション生成目的では使わない）
+# labio-devのスキーマをpullしてローカルに反映する（参考用、通常は使用しない）
+# 注意: マイグレーション生成には使用しない。マイグレーションファイルは直接作成する。
 supabase-sync-dev:
 	bash .cursor/load-env.sh sh -c 'npx supabase db pull --project-id ucsurbtmhabygssexisq'
 	npx supabase db reset

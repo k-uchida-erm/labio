@@ -5,7 +5,7 @@
 本ドキュメントでは、Labioのデータベーススキーマの**設計意図と重要な判断**を記録する。
 
 > **注意**: 実際のスキーマ定義（カラム、型、制約など）は以下の方法で確認できます：
-> - **Supabase MCP**: `mcp_supabase_list_tables`, `mcp_supabase_execute_sql` で動的に取得
+> - **Supabase MCP**: `mcp_supabase_local_pg_query` で読み取り専用クエリを実行（テーブル構造の確認など）
 > - **型定義**: `src/types/database.types.ts`（`make db-types`で自動生成）
 > - **Supabase Dashboard**: データベース構造を直接確認
 
@@ -305,8 +305,8 @@
    - 影響範囲を確認（RLS、トリガー、関数、コード）
 
 2. **マイグレーションの作成**
-   - Supabase MCPで`mcp_supabase_apply_migration`を実行
-   - またはSupabase DashboardでSQLを実行
+   - マイグレーションファイルを直接作成（`npx supabase migration new migration_name`）
+   - SQLを直接書く（`supabase/migrations/{timestamp}_{name}.sql`）
 
 3. **型定義の更新**
    ```bash
