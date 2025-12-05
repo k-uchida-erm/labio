@@ -148,7 +148,7 @@ supabase-sync-dev:
 # 注意: Gitがインストールされている必要があります
 setup-hooks:
 	@echo "Gitフックをセットアップ中..."
-	@docker compose run --rm app sh -c "git config core.hooksPath .githooks && chmod +x .githooks/pre-commit"
+	@docker compose run --rm app sh -c "git config core.hooksPath .githooks && chmod +x .githooks/pre-commit && chmod +x .githooks/post-commit"
 	@echo "✅ Gitフックをセットアップしました"
 
 # =============================================================================

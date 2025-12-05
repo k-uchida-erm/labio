@@ -8,12 +8,6 @@ DB変更情報を記録するNotionデータベースの構造です。
 
 | プロパティ名 | 型 | 説明 | 必須 |
 |------------|-----|------|------|
-| プロパティ名 | 型 | 説明 | 必須 |
-|------------|-----|------|------|
-| プロパティ名 | 型 | 説明 | 必須 |
-|------------|-----|------|------|
-| プロパティ名 | 型 | 説明 | 必須 |
-|------------|-----|------|------|
 | **Migration File** | Title | マイグレーションファイル名（タイムスタンプ除く） | ✅ |
 | **Timestamp** | Date | マイグレーションのタイムスタンプ | ✅ |
 | **Branch** | Rich Text | ブランチ名（動的、テキストで自由に入力可能） | ✅ |
@@ -61,7 +55,7 @@ DB変更情報を記録するNotionデータベースの構造です。
 1. データベースページを開く
 2. URLを確認（例: `https://www.notion.so/{workspace}/{database_id}?v=...`）
 3. `database_id`の部分をコピー（32文字の英数字、ハイフン含む）
-4. `.github/workflows/notion-db-changes.yml`の`NOTION_DATABASE_ID`に設定
+4. `.cursor/notion-sync.sh`の`NOTION_DATABASE_ID`に設定
 
 ### 4. Integrationの接続
 
@@ -72,7 +66,7 @@ DB変更情報を記録するNotionデータベースの構造です。
 
 ## 📝 プロパティ名の注意事項
 
-⚠️ **重要**: プロパティ名はワークフローファイル（`.github/workflows/notion-db-changes.yml`）で使用されている名前と**完全に一致**させる必要があります。
+⚠️ **重要**: プロパティ名はスクリプト（`.cursor/notion-sync.sh`）で使用されている名前と**完全に一致**させる必要があります。
 
 現在のプロパティ名：
 - `Migration File`（Title）
@@ -81,7 +75,7 @@ DB変更情報を記録するNotionデータベースの構造です。
 - `Commit SHA`（Rich Text）
 - `Author`（Rich Text）
 
-プロパティ名を変更する場合は、ワークフローファイルも同時に更新してください。
+プロパティ名を変更する場合は、`.cursor/notion-sync.sh`も同時に更新してください。
 
 ## 🔍 データベースIDの確認方法
 
@@ -89,18 +83,20 @@ DB変更情報を記録するNotionデータベースの構造です。
 
 1. NotionデータベースのURLを開く
 2. URLから`database_id`を抽出
-3. ワークフローファイルの`NOTION_DATABASE_ID`と一致しているか確認
+3. `.cursor/notion-sync.sh`の`NOTION_DATABASE_ID`と一致しているか確認
 
 例：
 ```
-https://www.notion.so/workspace/2c0b7adc-d6a4-8086-aff9-000bdeab9a5e?v=...
+https://www.notion.so/workspace/2c0b7adc-d6a4-806a-87ae-c450d3ea60b3?v=...
                                     ↑ この部分がデータベースID
 ```
 
+現在のデータベースID: `2c0b7adc-d6a4-806a-87ae-c450d3ea60b3`
+
 ## 🧪 テスト方法
 
-1. テスト用のマイグレーションファイルを作成
-2. `develop`ブランチにpush
-3. GitHub Actionsが実行されることを確認
-4. Notionデータベースにレコードが追加されることを確認
+1. `.env.local`に`NOTION_API_TOKEN`を設定
+2. `make setup-hooks`でGitフックをセットアップ
+3. テスト用のマイグレーションファイルを作成してコミット
+4. post-commitフックが実行され、Notionデータベースにレコードが追加されることを確認
 

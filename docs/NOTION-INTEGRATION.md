@@ -4,7 +4,7 @@ DB変更情報をNotionに自動的に記録する方法です。
 
 ## 🎯 概要
 
-コミット時にマイグレーションファイルが追加されたときに、Notionデータベースに自動的にレコードを作成します。
+コミット時にマイグレーションファイルが追加されたときに、post-commitフックが自動的にNotionデータベースにレコードを作成します。
 
 ## 📋 セットアップ手順
 
@@ -16,7 +16,15 @@ DB変更情報をNotionに自動的に記録する方法です。
 4. 「Submit」をクリック
 5. **Internal Integration Token**をコピー（`secret_`で始まる文字列）
 
-### 2. Notionデータベースの作成
+### 2. 環境変数の設定
+
+`.env.local`に以下を追加：
+
+```bash
+NOTION_API_TOKEN=secret_xxxxxxxxxxxxx
+```
+
+### 3. Notionデータベースの作成
 
 詳細なセットアップ手順は [`docs/NOTION-DB-SCHEMA.md`](./NOTION-DB-SCHEMA.md) を参照してください。
 
@@ -27,38 +35,38 @@ DB変更情報をNotionに自動的に記録する方法です。
 - **Commit SHA** (Rich Text): コミットハッシュ
 - **Author** (Rich Text): コミット作成者
 
-⚠️ **重要**: プロパティ名はワークフローファイルで使用されている名前と**完全に一致**させる必要があります。
+⚠️ **重要**: プロパティ名はスクリプト（`.cursor/notion-sync.sh`）で使用されている名前と**完全に一致**させる必要があります。
 
-現在のデータベースID: `2c0b7adc-d6a4-8086-aff9-000bdeab9a5e`
+現在のデータベースID: `2c0b7adc-d6a4-806a-87ae-c450d3ea60b3`
 
-### 3. GitHub Secretsの設定
+### 4. Gitフックのセットアップ
 
-GitHubリポジトリのSettings > Secrets and variables > Actionsで以下を追加：
+```bash
+make setup-hooks
+```
 
-- `NOTION_API_TOKEN`: Notion APIトークン（`secret_`で始まる文字列）
-
-> **注意**: データベースIDはワークフローファイル（`.github/workflows/notion-db-changes.yml`）に直接埋め込まれています。
+これで`post-commit`フックが有効化され、コミット時に自動的にNotionに記録されます。
 
 ## 🔄 動作フロー
 
 1. **マイグレーションファイルがコミットされる**
    - `supabase/migrations/`に新しい`.sql`ファイルが追加
-   - `main`または`develop`ブランチにpush
+   - コミットが完了
 
-2. **GitHub Actionsが実行**
-   - pushイベント時にマイグレーションファイルを検出
+2. **post-commitフックが実行**
+   - コミット完了後に自動的に実行
+   - マイグレーションファイルを検出
    - Notion APIを呼び出してレコードを作成
 
 3. **Notionデータベースに記録**
    - マイグレーション情報が自動的に追加される
+   - 日本語の要約も含まれます
 
-## 📝 ワークフロー
+## 📝 スクリプト
 
-ワークフローファイル: `.github/workflows/notion-db-changes.yml`
-
-- **トリガー**: `main`または`develop`ブランチへのpush時、`supabase/migrations/**/*.sql`が追加された場合
-- **動作**: 新しいマイグレーションファイルを検出し、Notionデータベースにレコードを作成
-- **データベースID**: `2c0b7adc-d6a4-8086-aff9-000bdeab9a5e`（ワークフローファイルに直接埋め込み）
+- **post-commitフック**: `.githooks/post-commit`
+- **Notion同期スクリプト**: `.cursor/notion-sync.sh`
+- **データベースID**: `2c0b7adc-d6a4-806a-87ae-c450d3ea60b3`（スクリプトに直接埋め込み）
 
 ## 📚 関連ドキュメント
 
