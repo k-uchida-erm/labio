@@ -2,8 +2,13 @@
 # Notionにマイグレーション情報を記録するスクリプト
 
 # 環境変数の読み込み
+# set -a: すべての変数を自動的にエクスポート
+# set +a: 自動エクスポートを無効化
 if [ -f .env.local ]; then
-  export $(grep -v '^#' .env.local | xargs)
+  set -a
+  # コメント行と空行を除外して読み込み
+  source <(grep -v '^#' .env.local | grep -v '^$')
+  set +a
 fi
 
 # 必須環境変数のチェック
