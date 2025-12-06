@@ -13,15 +13,11 @@ export type PageHeaderProps = {
   onSettingsClick?: () => void;
 };
 
-export function PageHeader({
-  projectCode,
-  projectName,
-  onSettingsClick,
-}: PageHeaderProps) {
+export function PageHeader({ projectCode, projectName, onSettingsClick }: PageHeaderProps) {
   return (
     <>
       {/* Top Header */}
-      <div className="flex h-10 w-full items-center justify-between py-0 pl-2 pr-4">
+      <div className="flex h-10 w-full items-center justify-between py-0 pr-4 pl-2">
         <div className="flex items-center gap-2">
           <span className="rounded border border-slate-300 px-2 py-1 text-sm text-slate-800">
             {projectCode}

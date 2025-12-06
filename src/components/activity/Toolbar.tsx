@@ -1,11 +1,6 @@
 'use client';
 
-import {
-  Search,
-  Filter,
-  ArrowUpDown,
-  Plus,
-} from 'lucide-react';
+import { Search, Filter, ArrowUpDown, Plus } from 'lucide-react';
 
 export type ToolbarProps = {
   onSearch?: () => void;
@@ -14,12 +9,7 @@ export type ToolbarProps = {
   onAddActivity?: () => void;
 };
 
-export function Toolbar({
-  onSearch,
-  onFilter,
-  onSort,
-  onAddActivity,
-}: ToolbarProps) {
+export function Toolbar({ onSearch, onFilter, onSort, onAddActivity }: ToolbarProps) {
   return (
     <div className="flex w-full items-center justify-between overflow-hidden bg-white px-8 py-2">
       {/* Left Group */}

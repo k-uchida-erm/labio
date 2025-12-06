@@ -9,11 +9,7 @@ export type ActivityListProps = {
   onStatusChange?: (id: string, status: ActivityStatus) => void;
 };
 
-export function ActivityList({
-  activities,
-  onActivityClick,
-  onStatusChange,
-}: ActivityListProps) {
+export function ActivityList({ activities, onActivityClick, onStatusChange }: ActivityListProps) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [hoveredId, setHoveredId] = useState<string | null>(null);
 
@@ -50,4 +46,3 @@ export function ActivityList({
     </div>
   );
 }
-

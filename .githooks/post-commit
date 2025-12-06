@@ -1,0 +1,16 @@
+#!/bin/sh
+# Git post-commit hook: Notionにマイグレーション情報を記録
+
+# ステージングされたマイグレーションファイルを取得（直前のコミット）
+LAST_COMMIT_MIGRATIONS=$(git diff-tree --no-commit-id --name-only --diff-filter=A -r HEAD | grep -E "^supabase/migrations/.*\.sql$" || true)
+
+if [ -z "$LAST_COMMIT_MIGRATIONS" ]; then
+  exit 0
+fi
+
+# Notion同期スクリプトを実行
+if [ -x ".cursor/notion-sync.sh" ]; then
+  echo "📝 Notionにマイグレーション情報を記録中..."
+  .cursor/notion-sync.sh || echo "⚠️  Notionへの記録に失敗しました"
+fi
+

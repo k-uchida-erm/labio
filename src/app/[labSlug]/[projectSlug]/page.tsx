@@ -1,12 +1,15 @@
 'use client';
 
-import { use, useState, useEffect } from 'react';
+import { use, useState } from 'react';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { PageHeader } from '@/components/activity/PageHeader';
 import { ViewHeader, ViewType } from '@/components/activity/ViewHeader';
 import { Toolbar } from '@/components/activity/Toolbar';
 import { ActivityList } from '@/components/activity/ActivityList';
-import { Activity as ActivityUI, ActivityStatus as ActivityStatusUI } from '@/components/activity/ActivityRow';
+import {
+  Activity as ActivityUI,
+  ActivityStatus as ActivityStatusUI,
+} from '@/components/activity/ActivityRow';
 import { useLab } from '@/features/lab/hooks/useLab';
 import { useProjects } from '@/features/project/hooks/useProjects';
 import { useActivities } from '@/features/activity/hooks/useActivities';
@@ -55,11 +58,12 @@ export default function ProjectPage({
   // データ取得
   const { lab, members, loading: labLoading } = useLab(labSlug);
   const { projects, loading: projectsLoading } = useProjects(lab?.id);
-  
+
   // 現在のプロジェクトを取得（slugがない場合はtitleで近似マッチ）
-  const currentProject = projects.find(
-    (p) => p.title.toLowerCase().replace(/\s+/g, '-') === projectSlug.toLowerCase()
-  ) || projects[0];
+  const currentProject =
+    projects.find(
+      (p) => p.title.toLowerCase().replace(/\s+/g, '-') === projectSlug.toLowerCase()
+    ) || projects[0];
 
   const {
     activities,
@@ -164,7 +168,7 @@ export default function ProjectPage({
             </div>
           ) : uiActivities.length === 0 ? (
             <div className="flex items-center justify-center py-8 text-slate-500">
-              No activities yet. Click "Add Activity" to create one.
+              No activities yet. Click &quot;Add Activity&quot; to create one.
             </div>
           ) : (
             <ActivityList

@@ -1,11 +1,6 @@
 'use client';
 
-import {
-  List,
-  LayoutGrid,
-  GanttChart,
-  Calendar,
-} from 'lucide-react';
+import { List, LayoutGrid, GanttChart, Calendar } from 'lucide-react';
 
 export type ViewType = 'list' | 'kanban' | 'gantt' | 'calendar';
 
@@ -36,9 +31,7 @@ export function ViewHeader({ currentView, onViewChange }: ViewHeaderProps) {
             key={option.type}
             onClick={() => onViewChange(option.type)}
             className={`flex h-7 items-center gap-2 rounded-lg px-3 py-1 text-xs font-medium text-slate-800 ${
-              currentView === option.type
-                ? 'border border-slate-300 bg-white'
-                : 'bg-slate-100'
+              currentView === option.type ? 'border border-slate-300 bg-white' : 'bg-slate-100'
             }`}
           >
             {option.icon}

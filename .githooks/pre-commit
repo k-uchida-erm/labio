@@ -1,0 +1,85 @@
+#!/bin/sh
+# Git pre-commit hook: 自動フォーマット・Lint修正・DB変更チェック
+
+# ステージングされたファイルをチェック
+STAGED_FILES=$(git diff --cached --name-only)
+
+# Supabase型定義を毎回生成
+# 注意: MCPでDBへの書き込みができないため、型定義の変更は必ずマイグレーションファイルと一緒にコミットされる
+if command -v npx >/dev/null 2>&1; then
+  echo "🧬 Supabase型定義を生成中..."
+  if [ -x ".cursor/load-env.sh" ]; then
+    bash .cursor/load-env.sh sh -c 'npx supabase gen types typescript --project-id ucsurbtmhabygssexisq > src/types/database.types.ts'
+  else
+    npx supabase gen types typescript --project-id ucsurbtmhabygssexisq > src/types/database.types.ts
+  fi
+fi
+
+# Prettierでフォーマット可能なファイルをチェック
+FORMATTABLE_FILES=$(echo "$STAGED_FILES" | grep -vE '\.(lock|log|sql)$' || true)
+
+if [ -n "$FORMATTABLE_FILES" ] || [ -f "src/types/database.types.ts" ]; then
+  echo "🔧 自動フォーマット・Lint修正を実行中..."
+  
+  # Prettierで全体をフォーマット（型定義生成後なので、型定義も含む）
+  echo "  📝 Prettierでフォーマット中..."
+  npx prettier --write . 2>/dev/null || true
+  
+  # TypeScript/JavaScriptファイルに対してESLintで自動修正
+  TS_JS_FILES=$(echo "$FORMATTABLE_FILES" | grep -E '\.(ts|tsx|js|jsx)$' || true)
+  if [ -n "$TS_JS_FILES" ]; then
+    echo "  🔍 ESLintで自動修正中..."
+    echo "$TS_JS_FILES" | while IFS= read -r file; do
+      if [ -f "$file" ]; then
+        npx eslint --fix "$file" 2>/dev/null || true
+      fi
+    done
+  fi
+  
+  # 修正されたファイルを再度ステージング
+  if [ -n "$FORMATTABLE_FILES" ]; then
+    echo "$FORMATTABLE_FILES" | while IFS= read -r file; do
+      if [ -f "$file" ]; then
+        git add "$file" 2>/dev/null || true
+      fi
+    done
+  fi
+  
+  # 型定義ファイルもステージング
+  if [ -f "src/types/database.types.ts" ]; then
+    git add src/types/database.types.ts 2>/dev/null || true
+  fi
+  
+  echo "✅ 自動フォーマット・Lint修正が完了しました"
+fi
+
+# 危険なDDL（DROP/TRUNCATEなど）を含むマイグレーションをブロック
+MIGRATION_FILES=$(echo "$STAGED_FILES" | grep -E "^supabase/migrations/.*\.sql$" || true)
+
+if [ -n "$MIGRATION_FILES" ]; then
+  DANGEROUS_PATTERN='(^|[[:space:]])(DROP[[:space:]]+(TABLE|VIEW|INDEX|SEQUENCE|FUNCTION|TRIGGER|COLUMN|CONSTRAINT)|TRUNCATE[[:space:]]+TABLE)'
+  DANGEROUS_HITS=""
+
+  echo "$MIGRATION_FILES" | while IFS= read -r file; do
+    if [ -n "$file" ]; then
+      # ステージ済み内容をチェック
+      if git show ":$file" | grep -Eqi "$DANGEROUS_PATTERN"; then
+        DANGEROUS_HITS="$DANGEROUS_HITS$file\n"
+      fi
+    fi
+  done
+
+  if [ -n "$DANGEROUS_HITS" ]; then
+    echo "❌ エラー: 危険なDDLが含まれるマイグレーションを検出しました。"
+    printf "対象ファイル:\n$DANGEROUS_HITS"
+    echo ""
+    echo "【対処例】"
+    echo "- カラム名変更は RENAME COLUMN に書き換え（DROP/ADD を避ける）"
+    echo "- 不要な TRUNCATE/DROP を削除するかデータ退避を検討"
+    echo ""
+    echo "⚠️  本当に破壊的変更が必要な場合でも、レビューのうえでコメントを残すなど慎重に対応してください。"
+    exit 1
+  fi
+fi
+
+exit 0

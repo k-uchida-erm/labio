@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { Project, ProjectWithAssignee } from '../types';
+import { ProjectWithAssignee } from '../types';
 
 export function useProjects(labId: string | undefined) {
   const [projects, setProjects] = useState<ProjectWithAssignee[]>([]);
@@ -35,7 +35,10 @@ export function useProjects(labId: string | undefined) {
             .map((p) => p.assignee_id)
             .filter((id): id is string => id !== null);
 
-          let assigneeMap = new Map<string, { id: string; display_name: string | null; avatar_url: string | null }>();
+          let assigneeMap = new Map<
+            string,
+            { id: string; display_name: string | null; avatar_url: string | null }
+          >();
 
           if (assigneeIds.length > 0) {
             const { data: profilesData } = await supabase
@@ -140,11 +143,11 @@ export function useProjectBySlug(labId: string | undefined, projectSlug: string 
           .limit(1);
 
         if (fetchError) throw fetchError;
-        
+
         if (data && data.length > 0) {
           const projectData = data[0];
           let assignee = null;
-          
+
           if (projectData.assignee_id) {
             const { data: profileData } = await supabase
               .from('profiles')
