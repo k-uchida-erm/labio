@@ -86,7 +86,7 @@ DB変更情報を記録するNotionデータベースの構造です。
 3. `.cursor/notion-sync.sh`の`NOTION_DATABASE_ID`と一致しているか確認
 
 例：
-```
+```text
 https://www.notion.so/workspace/2c0b7adc-d6a4-806a-87ae-c450d3ea60b3?v=...
                                     ↑ この部分がデータベースID
 ```

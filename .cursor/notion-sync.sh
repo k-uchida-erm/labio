@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 # Notionにマイグレーション情報を記録するスクリプト
 
 # 環境変数の読み込み
@@ -165,8 +165,8 @@ echo "$STAGED_MIGRATIONS" | while IFS= read -r migration_file; do
       
       # **text**パターンを検出して処理
       while echo "$remaining" | grep -qE '\*\*[^*]+\*\*'; do
-        # **text**の前の部分
-        before=$(echo "$remaining" | sed -E 's/(\*\*[^*]+\*\*).*/\1/' | sed -E 's/\*\*[^*]+\*\*$//')
+        # **text**の前の部分（最初の **...** より前をすべて取得）
+        before=$(echo "$remaining" | sed -E 's/\*\*[^*]+\*\*.*//')
         if [ -n "$before" ]; then
           before_escaped=$(printf "%s" "$before" | sed 's/\\/\\\\/g' | sed 's/"/\\"/g')
           if [ -z "$rich_text_array" ]; then

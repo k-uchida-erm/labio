@@ -1,4 +1,4 @@
-.PHONY: help up down build logs shell clean install dev lint format test typecheck lint-fix format-check test-e2e db-types setup-hooks supabase-start supabase-stop supabase-reset supabase-sync-dev env-use-develop env-restore-local
+.PHONY: help up down build rebuild logs shell clean install dev lint format test typecheck lint-fix format-check test-e2e db-types setup-hooks supabase-start supabase-stop supabase-reset supabase-sync-dev env-use-develop env-restore-local
 # デフォルトターゲット
 help:
 	@echo "Labio 開発コマンド"
@@ -157,7 +157,10 @@ setup-hooks:
 
 env-use-develop:
 	@if [ ! -f .env.develop ]; then echo "❌ .env.develop がありません"; exit 1; fi
-	@if [ -f .env.local ]; then cp .env.local .env.local.backup && echo "↩️  既存 .env.local を .env.local.backup に退避"; fi
+	@if [ -f .env.local ]; then \
+		if [ -f .env.local.backup ]; then echo "⚠️  .env.local.backup が既に存在します。上書きします..."; fi; \
+		cp .env.local .env.local.backup && echo "↩️  既存 .env.local を .env.local.backup に退避"; \
+	fi
 	@cp .env.develop .env.local
 	@echo "✅ .env.local を develop 用に切り替えました (.env.develop を適用)"
 
