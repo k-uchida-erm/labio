@@ -9,13 +9,13 @@ on:
 jobs:
   check-migrations:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      
+
       - name: Check for database type changes
         id: check-db-types
         run: |
@@ -26,15 +26,15 @@ jobs:
             BASE_SHA="${{ github.event.before }}"
             HEAD_SHA="${{ github.event.after }}"
           fi
-          
+
           DB_TYPES_CHANGED=$(git diff --name-only $BASE_SHA $HEAD_SHA | grep -E "^src/types/database\.types\.ts$" || true)
-          
+
           if [ -n "$DB_TYPES_CHANGED" ]; then
             echo "db_types_changed=true" >> $GITHUB_OUTPUT
           else
             echo "db_types_changed=false" >> $GITHUB_OUTPUT
           fi
-      
+
       - name: Check for migration files
         id: check-migrations
         run: |
@@ -45,20 +45,20 @@ jobs:
             BASE_SHA="${{ github.event.before }}"
             HEAD_SHA="${{ github.event.after }}"
           fi
-          
+
           NEW_MIGRATIONS=$(git diff --name-only --diff-filter=A $BASE_SHA $HEAD_SHA | grep -E "^supabase/migrations/.*\.sql$" || true)
-          
+
           if [ -n "$NEW_MIGRATIONS" ]; then
             echo "new_migrations=true" >> $GITHUB_OUTPUT
           else
             echo "new_migrations=false" >> $GITHUB_OUTPUT
           fi
-      
+
       - name: Validate migration requirement
         run: |
           DB_TYPES_CHANGED="${{ steps.check-db-types.outputs.db_types_changed }}"
           NEW_MIGRATIONS="${{ steps.check-migrations.outputs.new_migrations }}"
-          
+
           if [ "$DB_TYPES_CHANGED" == "true" ] && [ "$NEW_MIGRATIONS" == "false" ]; then
             echo "::error::❌ DB変更が検出されましたが、マイグレーションファイルが追加されていません！"
             echo ""
@@ -81,29 +81,28 @@ jobs:
 
   lint-and-test:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: 'npm'
-      
+
       - name: Install dependencies
         run: npm ci
-      
+
       - name: Lint
         run: npx eslint . --ext .ts,.tsx,.js,.jsx --max-warnings 0
-      
+
       - name: Type check
         run: npm run typecheck
-      
+
       - name: Format check
         run: npm run format:check
-      
+
       - name: Test
         run: npm test
-

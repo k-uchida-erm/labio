@@ -5,6 +5,7 @@
 本ドキュメントでは、Labioのデータベーススキーマの**設計意図と重要な判断**を記録する。
 
 > **注意**: 実際のスキーマ定義（カラム、型、制約など）は以下の方法で確認できます：
+>
 > - **Supabase MCP**: `mcp_supabase_local_pg_query` で読み取り専用クエリを実行（テーブル構造の確認など）
 > - **型定義**: `src/types/database.types.ts`（`make db-types`で自動生成）
 > - **Supabase Dashboard**: データベース構造を直接確認
@@ -22,7 +23,7 @@
 
 | 対象         | 規則                          | 例                      |
 | ------------ | ----------------------------- | ----------------------- |
-| テーブル名   | snake_case（複数形）          | `projects`             |
+| テーブル名   | snake_case（複数形）          | `projects`              |
 | カラム名     | snake_case                    | `created_at`            |
 | 主キー       | `id`                          | `id UUID PRIMARY KEY`   |
 | 外部キー     | `{テーブル単数形}_id`         | `lab_id`, `user_id`     |
@@ -35,11 +36,11 @@
 
 詳細な定義はMCPまたは`database.types.ts`で確認可能。ここでは設計意図のみ記載。
 
-| ENUM型 | 値 | 設計意図 |
-|--------|-----|---------|
-| `activity_status` | `todo`, `in_progress`, `in_review`, `done` | Activityのワークフロー状態を管理 |
-| `activity_type` | `task`, `experiment`, `question`, `review`, `meeting`, `note` | Activityの種類を分類（フィルタリング・統計用） |
-| `invitation_status` | `pending`, `accepted`, `declined`, `expired` | Lab招待の状態を管理 |
+| ENUM型              | 値                                                            | 設計意図                                       |
+| ------------------- | ------------------------------------------------------------- | ---------------------------------------------- |
+| `activity_status`   | `todo`, `in_progress`, `in_review`, `done`                    | Activityのワークフロー状態を管理               |
+| `activity_type`     | `task`, `experiment`, `question`, `review`, `meeting`, `note` | Activityの種類を分類（フィルタリング・統計用） |
+| `invitation_status` | `pending`, `accepted`, `declined`, `expired`                  | Lab招待の状態を管理                            |
 
 ---
 
@@ -52,6 +53,7 @@
 **設計意図**: Supabase Authの`auth.users`と1:1で連携するプロフィールテーブル
 
 **重要なポイント**:
+
 - `id`は`auth.users.id`と同一（外部キー制約で連携）
 - `email`は`auth.users.email`のコピー（クエリ効率化のため）
 - `avatar_url`はSupabase StorageのURLを保存
@@ -63,6 +65,7 @@
 **設計意図**: 研究室単位のデータ管理
 
 **重要なポイント**:
+
 - `slug`: URL用の一意識別子（グローバルにユニーク、ランダムサフィックス付き）
 - `is_personal`: 個人プランかどうか（将来の機能拡張用）
 - `deleted_at`: ソフトデリート（Lab削除時もデータを保持）
@@ -74,6 +77,7 @@
 **設計意図**: Labごとのメンバー管理と権限管理
 
 **重要なポイント**:
+
 - `is_owner`: booleanフラグでowner/memberを区別（Supabase推奨の`app_metadata`ではなく、Labごとのロール管理が必要なため）
 - `UNIQUE(lab_id, user_id)`: 1ユーザーは1Labに1回のみ参加可能
 - Lab作成時に作成者が自動的に`is_owner = TRUE`で追加される（トリガー）
@@ -85,6 +89,7 @@
 **設計意図**: Labへの招待機能
 
 **重要なポイント**:
+
 - `token`: 招待リンク用のユニークトークン
 - `is_owner`: 招待時にownerとして追加するかどうか
 - `expires_at`: 有効期限（デフォルト7日）
@@ -97,6 +102,7 @@
 **設計意図**: Lab内のプロジェクト管理
 
 **重要なポイント**:
+
 - `key`: Project識別キー（2-5桁、Lab内でユニーク、ユーザー設定、例: `PINN`, `ML`, `AI`）
 - `UNIQUE(lab_id, key)`: Lab内でkeyが一意
 - `assignee_id`: 主担当者（生徒）
@@ -109,6 +115,7 @@
 **設計意図**: プロジェクト内のActivity（タスク、実験ノート、質問など）管理
 
 **重要なポイント**:
+
 - `sequence_number`: Project内での連番（1から始まる、自動設定）
 - `UNIQUE(lab_id, project_id, sequence_number)`: Lab内で一意
 - 表示ID: `{projectKey}-{sequence_number}`（例: `PINN-1`）
@@ -122,6 +129,7 @@
 **設計意図**: Lab単位のタグ管理
 
 **重要なポイント**:
+
 - `UNIQUE(lab_id, name)`: Lab内でタグ名が一意
 - `color`: HEXカラーコード（ユーザーが設定可能）
 
@@ -132,6 +140,7 @@
 **設計意図**: Activityとタグの多対多関係
 
 **重要なポイント**:
+
 - `UNIQUE(activity_id, tag_id)`: 1Activityに同じタグを複数回付けない
 
 **関連**: `activities` (N:1), `tags` (N:1)
@@ -141,6 +150,7 @@
 **設計意図**: Activityへのコメント機能（スレッド形式対応）
 
 **重要なポイント**:
+
 - `parent_id`: 親コメントID（スレッド形式）
 - `content`: Markdown形式
 - `deleted_at`: ソフトデリート（削除後も構造を保持）
@@ -152,6 +162,7 @@
 **設計意図**: ActivityまたはCommentへのファイル添付
 
 **重要なポイント**:
+
 - `storage_path`: Supabase Storageのパス
 - `comment_id`: Commentに添付する場合（オプション）
 - `file_size`, `mime_type`: ファイル情報
@@ -163,6 +174,7 @@
 **設計意図**: AIが生成したサマリーの保存
 
 **重要なポイント**:
+
 - `content`: Markdown形式のサマリー
 - `source_type`: サマリーの対象（`lab`, `project`, `activity`）
 - `source_id`: 対象のID
@@ -284,6 +296,7 @@
 ### 7.1 変更可能なもの
 
 ✅ **変更可能**:
+
 - カラムの追加・削除・変更
 - インデックスの追加・削除
 - テーブルの追加・削除
@@ -293,6 +306,7 @@
 ### 7.2 変更前に確認すべきもの
 
 ⚠️ **変更前に慎重に検討**:
+
 - **RLSポリシー**: 既存のポリシーへの影響
 - **トリガー・関数**: 既存のトリガー・関数への影響
 - **外部キー制約**: データ整合性への影響
@@ -309,6 +323,7 @@
    - SQLを直接書く（`supabase/migrations/{timestamp}_{name}.sql`）
 
 3. **型定義の更新**
+
    ```bash
    make db-types
    ```
@@ -330,6 +345,7 @@
 ### 7.4 最初に決めておくべきもの
 
 🔒 **最初に決めておくべき重要な設計判断**:
+
 - **権限管理方式**: `is_owner` booleanフラグ（Labごとのロール管理）
 - **ルーティング設計**: `slug`, `key`, `sequence_number`の仕組み
 - **ソフトデリート**: `deleted_at`の使用方針
@@ -341,7 +357,7 @@
 
 ## 8. 変更履歴
 
-| 日付 | 変更内容 |
-|------|----------|
+| 日付       | 変更内容                                                |
+| ---------- | ------------------------------------------------------- |
 | 2024-12-04 | 詳細なSQL定義を削除し、設計意図と重要な判断のみに簡略化 |
-| 2024-12-04 | DB設計変更のワークフローを追加 |
+| 2024-12-04 | DB設計変更のワークフローを追加                          |

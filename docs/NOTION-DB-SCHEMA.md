@@ -6,13 +6,13 @@ DB変更情報を記録するNotionデータベースの構造です。
 
 ### プロパティ一覧
 
-| プロパティ名 | 型 | 説明 | 必須 |
-|------------|-----|------|------|
-| **Migration File** | Title | マイグレーションファイル名（タイムスタンプ除く） | ✅ |
-| **Timestamp** | Date | マイグレーションのタイムスタンプ | ✅ |
-| **Branch** | Rich Text | ブランチ名（動的、テキストで自由に入力可能） | ✅ |
-| **Commit SHA** | Rich Text | コミットハッシュ | ✅ |
-| **Author** | Rich Text | コミット作成者（GitHubユーザー名） | ✅ |
+| プロパティ名       | 型        | 説明                                             | 必須 |
+| ------------------ | --------- | ------------------------------------------------ | ---- |
+| **Migration File** | Title     | マイグレーションファイル名（タイムスタンプ除く） | ✅   |
+| **Timestamp**      | Date      | マイグレーションのタイムスタンプ                 | ✅   |
+| **Branch**         | Rich Text | ブランチ名（動的、テキストで自由に入力可能）     | ✅   |
+| **Commit SHA**     | Rich Text | コミットハッシュ                                 | ✅   |
+| **Author**         | Rich Text | コミット作成者（GitHubユーザー名）               | ✅   |
 
 ## 🛠️ セットアップ手順
 
@@ -26,25 +26,30 @@ DB変更情報を記録するNotionデータベースの構造です。
 各プロパティを以下の設定で追加してください：
 
 #### Migration File (Title)
+
 - **型**: Title
 - **説明**: マイグレーションファイル名（例: `add_user_table`）
 - **注意**: Titleプロパティは自動的に作成されるため、名前を変更するだけ
 
 #### Timestamp (Date)
+
 - **型**: Date
 - **説明**: マイグレーションのタイムスタンプ
 - **設定**: 時刻を含む日付形式
 
 #### Branch (Rich Text)
+
 - **型**: Rich Text
 - **説明**: ブランチ名（動的な値なので、テキスト型で自由に入力可能）
 - **注意**: Select型ではなくRich Text型を使用することで、新しいブランチ名が自動的に記録されます
 
 #### Commit SHA (Rich Text)
+
 - **型**: Rich Text
 - **説明**: コミットハッシュ（例: `a1b2c3d4e5f6...`）
 
 #### Author (Rich Text)
+
 - **型**: Rich Text
 - **説明**: コミット作成者（GitHubユーザー名）
 
@@ -69,6 +74,7 @@ DB変更情報を記録するNotionデータベースの構造です。
 ⚠️ **重要**: プロパティ名はスクリプト（`.cursor/notion-sync.sh`）で使用されている名前と**完全に一致**させる必要があります。
 
 現在のプロパティ名：
+
 - `Migration File`（Title）
 - `Timestamp`（Date）
 - `Branch`（Rich Text）- 動的なブランチ名を自動記録
@@ -86,6 +92,7 @@ DB変更情報を記録するNotionデータベースの構造です。
 3. `.cursor/notion-sync.sh`の`NOTION_DATABASE_ID`と一致しているか確認
 
 例：
+
 ```text
 https://www.notion.so/workspace/2c0b7adc-d6a4-806a-87ae-c450d3ea60b3?v=...
                                     ↑ この部分がデータベースID
@@ -99,4 +106,3 @@ https://www.notion.so/workspace/2c0b7adc-d6a4-806a-87ae-c450d3ea60b3?v=...
 2. `make setup-hooks`でGitフックをセットアップ
 3. テスト用のマイグレーションファイルを作成してコミット
 4. post-commitフックが実行され、Notionデータベースにレコードが追加されることを確認
-

@@ -29,6 +29,7 @@ NOTION_API_TOKEN=secret_xxxxxxxxxxxxx
 詳細なセットアップ手順は [`docs/NOTION-DB-SCHEMA.md`](./NOTION-DB-SCHEMA.md) を参照してください。
 
 **必要なプロパティ**:
+
 - **Migration File** (Title): マイグレーションファイル名
 - **Timestamp** (Date): マイグレーションのタイムスタンプ
 - **Branch** (Rich Text): ブランチ名（動的な値なのでテキスト型）
@@ -76,4 +77,3 @@ make setup-hooks
 
 - [Notion API Documentation](https://developers.notion.com/)
 - [Notion API Reference](https://developers.notion.com/reference)
-

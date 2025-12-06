@@ -12,7 +12,15 @@ export type ActivityWithAssignee = Activity & {
 };
 
 // UIコンポーネント用の型（DBの型とは別）
-export type ActivityDisplayType = 'Task' | 'Bug' | 'Feature' | 'Experiment' | 'Question' | 'Review' | 'Meeting' | 'Note';
+export type ActivityDisplayType =
+  | 'Task'
+  | 'Bug'
+  | 'Feature'
+  | 'Experiment'
+  | 'Question'
+  | 'Review'
+  | 'Meeting'
+  | 'Note';
 
 // DBのactivity_typeをUI表示用に変換
 export const activityTypeToDisplay: Record<ActivityType, ActivityDisplayType> = {

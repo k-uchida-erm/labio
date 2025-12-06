@@ -51,7 +51,7 @@ export function useLab(labSlug: string) {
             .in('id', userIds);
 
           const profileMap = new Map(profilesData?.map((p) => [p.id, p]) || []);
-          
+
           const membersWithProfiles = membersData.map((m) => ({
             ...m,
             profile: profileMap.get(m.user_id) || null,

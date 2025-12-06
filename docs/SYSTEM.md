@@ -8,10 +8,10 @@ Labioプロジェクトの現状のシステム構成を説明します。
 
 ### 開発環境と本番環境の分離
 
-| 環境 | Supabaseプロジェクト | 用途 | 環境変数 |
-|------|---------------------|------|---------|
-| **開発環境** | `labio-dev` (Project ID: `ucsurbtmhabygssexisq`) | ローカル開発、テスト | `.env.local` |
-| **本番環境** | `labio-pro` (Project ID: `pnhgavzooyusuzsmuvev`) | 本番デプロイ | Vercel Environment Variables |
+| 環境         | Supabaseプロジェクト                             | 用途                 | 環境変数                     |
+| ------------ | ------------------------------------------------ | -------------------- | ---------------------------- |
+| **開発環境** | `labio-dev` (Project ID: `ucsurbtmhabygssexisq`) | ローカル開発、テスト | `.env.local`                 |
+| **本番環境** | `labio-pro` (Project ID: `pnhgavzooyusuzsmuvev`) | 本番デプロイ         | Vercel Environment Variables |
 
 ### データベース
 
@@ -30,10 +30,12 @@ Labioプロジェクトの現状のシステム構成を説明します。
 **ファイル**: `.github/workflows/ci.yml`
 
 **トリガー**:
+
 - PR作成時（`pull_request`）
 - mainブランチへのpush時（`push`）
 
 **実行内容**:
+
 - ✅ **マイグレーションチェック**: `src/types/database.types.ts`が変更された場合、`supabase/migrations/`に新しいファイルが追加されているかチェック
 - ✅ **Lintチェック**: ESLintでコード品質をチェック
 - ✅ **型チェック**: TypeScriptの型エラーを検出
@@ -41,6 +43,7 @@ Labioプロジェクトの現状のシステム構成を説明します。
 - ✅ **テスト実行**: Vitestで単体テストを実行
 
 **失敗時の動作**:
+
 - PRがマージできない（CIチェックが必須）
 - エラーメッセージがPRに表示される
 
@@ -49,21 +52,24 @@ Labioプロジェクトの現状のシステム構成を説明します。
 **設定場所**: [CodeRabbit](https://coderabbit.ai/)（GitHubアプリとして連携）
 
 **動作**:
+
 - **PR作成時**: 自動的にコードレビューを実行
 - **コード変更時**: PRに新しいコメントが追加される
 - **レビュー内容**: コード品質、バグ、セキュリティ、パフォーマンス、ベストプラクティス
 
 **設定状況**:
+
 - GitHub MarketplaceまたはCodeRabbit Dashboardから設定可能
 
 **料金プラン**:
+
 - ✅ **無料プラン**: 基本的なコードレビュー機能が利用可能
   - PRの要約機能
   - 基本的なコードレビュー
   - VS Code拡張機能
 - 🎁 **オープンソースプロジェクト**: Proプランの機能を無償で提供
   - 公開リポジトリの場合、Proプランの機能が無料で利用可能
-- 💰 **有料プラン**: 
+- 💰 **有料プラン**:
   - Lite: 月額$15/開発者
   - Pro: 月額$30/開発者
   - Enterprise: 要問い合わせ
@@ -71,6 +77,7 @@ Labioプロジェクトの現状のシステム構成を説明します。
 **注意**: このプロジェクト（`k-uchida-erm/labio`）が公開リポジトリの場合、無料でProプランの機能が利用可能です。
 
 **トラブルシューティング**:
+
 - **GitHub Marketplaceの利用規約エラー**: 組織のオーナーに依頼するか、CodeRabbit Dashboardから設定
 
 #### 3. 本番環境への自動デプロイ
@@ -78,14 +85,17 @@ Labioプロジェクトの現状のシステム構成を説明します。
 **ファイル**: `.github/workflows/deploy-production.yml`
 
 **トリガー**:
+
 - mainブランチへのpush時（`push`）
 
 **実行内容**:
+
 1. **マイグレーション適用**: `supabase/migrations/`のマイグレーションファイルを本番環境に適用
 2. **型定義生成**: 本番環境からTypeScript型定義を生成
 3. **型定義コミット**: 生成した型定義を自動的にコミット
 
 **必要なSecrets**:
+
 - `SUPABASE_ACCESS_TOKEN`: Supabase Access Token
 - `SUPABASE_PROJECT_ID_PROD`: 本番環境のProject ID (`pnhgavzooyusuzsmuvev`)
 
@@ -94,10 +104,12 @@ Labioプロジェクトの現状のシステム構成を説明します。
 **設定状況**: Vercel Dashboardで設定済み
 
 **動作**:
+
 - **PR作成時**: Preview環境に自動デプロイ（PRごとにURLが生成される）
 - **mainブランチにマージ時**: 本番環境に自動デプロイ
 
 **環境変数**:
+
 - Production, Preview, Development環境でそれぞれ設定済み
 - 本番環境用のSupabase認証情報を設定済み
 
@@ -112,6 +124,7 @@ Labioプロジェクトの現状のシステム構成を説明します。
 **形式**: `{timestamp}_{name}.sql`
 
 **例**:
+
 ```
 supabase/migrations/
 ├── 20251203160813_current_schema.sql
@@ -124,12 +137,15 @@ supabase/migrations/
 #### マイグレーションファイルを直接作成
 
 1. **マイグレーションファイルを作成**
+
    ```bash
    npx supabase migration new migration_name
    ```
+
    例: `npx supabase migration new add_user_table`
 
 2. **SQLを直接書く**
+
    ```sql
    -- supabase/migrations/20251205111107_add_user_table.sql
    CREATE TABLE public.users (
@@ -140,6 +156,7 @@ supabase/migrations/
    ```
 
 3. **ローカルDBに適用して動作確認**
+
    ```bash
    npx supabase db reset --local
    # または
@@ -147,11 +164,13 @@ supabase/migrations/
    ```
 
 4. **マイグレーションファイルをコミット**
+
    ```bash
    git add supabase/migrations/
    git commit -m "feat: add user table"
    git push
    ```
+
    > **注意**: pre-commitフックが自動的に型定義を生成・ステージングします
 
 5. **mainブランチにマージ**
@@ -160,10 +179,12 @@ supabase/migrations/
 ### 自動チェック
 
 **Gitフック（pre-commit）**:
+
 - `src/types/database.types.ts`が変更された場合、`supabase/migrations/`に新しいファイルが追加されているかチェック
 - 未追加の場合はコミットを拒否
 
 **GitHub Actions CI**:
+
 - PR作成時にも同様のチェックを実行
 - 未追加の場合はCIが失敗し、PRがマージできない
 
@@ -176,6 +197,7 @@ supabase/migrations/
 **場所**: プロジェクトルート（Gitにコミットしない）
 
 **ローカルSupabase（デフォルト）**:
+
 ```env
 NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
 NEXT_PUBLIC_SUPABASE_ANON_KEY=<local anon>
@@ -188,6 +210,7 @@ FIGMA_ACCESS_TOKEN=<your figma token>
 ```
 
 **共有開発（例: labio-dev）を使う場合**:
+
 ```env
 # .env.develop にリモートのURL/キーを入れる（コミットしない）
 NEXT_PUBLIC_SUPABASE_URL=https://<develop>.supabase.co
@@ -195,6 +218,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=<develop anon>
 SUPABASE_SERVICE_ROLE_KEY=<develop service_role>
 SUPABASE_PROJECT_ID=<develop project id>
 ```
+
 切替は `make env-use-develop`（一時的に develop を適用）/`make env-restore-local`（ローカルに戻す）で行う。
 
 ### 本番環境（Vercel）
@@ -202,6 +226,7 @@ SUPABASE_PROJECT_ID=<develop project id>
 **設定場所**: Vercel Dashboard > Settings > Environment Variables
 
 **必要な環境変数**:
+
 ```env
 # Supabase（本番環境）
 NEXT_PUBLIC_SUPABASE_URL=https://pnhgavzooyusuzsmuvev.supabase.co
@@ -210,11 +235,13 @@ SUPABASE_SERVICE_ROLE_KEY=your-prod-service-role-key
 ```
 
 **環境**:
+
 - Production: 本番環境（main → labio-pro）
 - Preview: PRごとのPreview環境
 - Development: ローカル開発（デフォルトはローカルSupabase／必要時のみ develop = labio-dev に切替）
 
 ## 🚀 開発フロー概要（運用）
+
 - ブランチ戦略: `develop` から `feature/aa_bb`（タスク名をスネークケース）を切る。`develop` は labio-dev、`main` は labio-pro に接続
 - UI: Figmaまたは既存ページを参照し、コード上で0から新デザインを作らない
 - DB: マイグレーションファイルを直接作成（`npx supabase migration new`）。MCP（`mcp_supabase_local_pg_query`）は読み取り専用で使用。pre-commit で型生成と危険DDLチェック（DROP/TRUNCATE）およびマイグレ有無チェック
@@ -237,12 +264,14 @@ SUPABASE_SERVICE_ROLE_KEY=your-prod-service-role-key
 **設定状況**: GitHub Settings > Rules > Rulesets で設定済み
 
 **ルール**:
+
 - ✅ **Restrict updates**: mainブランチへの直接プッシュを禁止
 - ✅ **Require a pull request before merging**: PR必須
 - ✅ **Block force pushes**: force pushを禁止
 - ✅ **Require status checks to pass**: CIチェックが通るまでマージ不可
 
 **ワークフロー**:
+
 1. `develop`ブランチから`feature/*`ブランチを作成
 2. 機能開発・テスト
 3. PRを作成（`develop`または`main`へ）
@@ -261,6 +290,7 @@ SUPABASE_SERVICE_ROLE_KEY=your-prod-service-role-key
 **用途**: 開発環境の統一
 
 **コマンド**:
+
 ```bash
 make up        # コンテナを起動
 make down      # コンテナを停止
@@ -273,6 +303,7 @@ make build     # イメージをビルド
 **設定**: `make setup-hooks`でセットアップ
 
 **動作**:
+
 - コミット前にDB変更をチェック
 - マイグレーションファイルが未追加の場合はコミットを拒否
 
@@ -281,10 +312,12 @@ make build     # イメージをビルド
 **用途**: AI駆動開発
 
 **設定**:
+
 - Supabase MCP: `SUPABASE_ACCESS_TOKEN`を設定
 - Figma MCP: `FIGMA_ACCESS_TOKEN`を設定（デザイナーのみ）
 
 **使用方法**:
+
 - Supabase MCP（`mcp_supabase_local_pg_query`）: ローカルSupabaseに対して読み取り専用クエリを実行（テーブル構造の確認など）
 - Figma MCP: FigmaデザインからReactコンポーネントを自動生成可能
 - **注意**: DB書き込みはマイグレーションファイルを直接作成（MCPでは書き込み不可）
@@ -345,4 +378,3 @@ GitHub Actions
 - **開発環境構築ガイド**: `docs/CONTRIBUTING.md`（新規開発者は最初に読む）
 - **アーキテクチャ**: `docs/architecture.md`
 - **DB設計**: `docs/specs/database/schema.md`
-

@@ -53,6 +53,7 @@
 #### 2.2.1 Supabase Client SDK（最優先）
 
 **使用する場合**:
+
 - ✅ CRUD操作（RLSで保護されている）
 - ✅ リアルタイム更新（Realtime）
 - ✅ 認証・認可（Supabase Auth）
@@ -60,24 +61,26 @@
 - ✅ シンプルなクエリ
 
 **使用しない場合**:
+
 - ❌ 外部API呼び出しが必要
 - ❌ 複雑なビジネスロジック
 - ❌ サーバー側でのみ実行すべき処理
 
 **実装例**:
+
 ```typescript
 // features/activity/hooks/useActivities.ts
 import { createClient } from '@/lib/supabase/client';
 
 export function useActivities(projectId: string) {
   const supabase = createClient();
-  
+
   const { data, error } = await supabase
     .from('activities')
     .select('*')
     .eq('project_id', projectId)
     .order('position');
-    
+
   return { data, error };
 }
 ```
@@ -85,6 +88,7 @@ export function useActivities(projectId: string) {
 #### 2.2.2 Server Actions
 
 **使用する場合**:
+
 - ✅ フォーム送信（`<form action={action}>`）
 - ✅ サーバー側でのバリデーション
 - ✅ サーバー側でのデータ変換
@@ -92,11 +96,13 @@ export function useActivities(projectId: string) {
 - ✅ ファイルアップロードの処理（Storageへの保存）
 
 **使用しない場合**:
+
 - ❌ 外部API呼び出し（API Routesを使用）
 - ❌ 長時間実行される処理（API Routesを使用）
 - ❌ Webhook受信（API Routesを使用）
 
 **実装例**:
+
 ```typescript
 // features/activity/actions/createActivity.ts
 'use server';
@@ -106,20 +112,20 @@ import { revalidatePath } from 'next/cache';
 
 export async function createActivity(formData: FormData) {
   const supabase = await createClient();
-  
-  const { data: { user } } = await supabase.auth.getUser();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) throw new Error('Unauthorized');
-  
-  const { error } = await supabase
-    .from('activities')
-    .insert({
-      project_id: formData.get('project_id'),
-      title: formData.get('title'),
-      created_by: user.id,
-    });
-    
+
+  const { error } = await supabase.from('activities').insert({
+    project_id: formData.get('project_id'),
+    title: formData.get('title'),
+    created_by: user.id,
+  });
+
   if (error) throw error;
-  
+
   revalidatePath(`/[labSlug]/[projectSlug]`);
 }
 ```
@@ -127,6 +133,7 @@ export async function createActivity(formData: FormData) {
 #### 2.2.3 API Routes（`/app/api/`）
 
 **使用する場合**:
+
 - ✅ **外部API呼び出し**（OpenAI API、Marp CLI等）
 - ✅ **長時間実行される処理**（AI要約生成、資料生成）
 - ✅ **Webhook受信**（外部サービスからの通知）
@@ -134,10 +141,12 @@ export async function createActivity(formData: FormData) {
 - ✅ **バッチ処理**（大量データの一括処理）
 
 **使用しない場合**:
+
 - ❌ 単純なCRUD操作（Supabase Client SDKを使用）
 - ❌ フォーム送信（Server Actionsを使用）
 
 **実装例**:
+
 ```typescript
 // app/api/v1/ai/summarize/route.ts
 import { NextRequest, NextResponse } from 'next/server';
@@ -145,18 +154,20 @@ import { createClient } from '@/lib/supabase/server';
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
-  
+
   const { activityIds } = await request.json();
-  
+
   // OpenAI API呼び出し
   const response = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+      Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
@@ -164,7 +175,7 @@ export async function POST(request: NextRequest) {
       messages: [{ role: 'user', content: '...' }],
     }),
   });
-  
+
   const data = await response.json();
   return NextResponse.json({ success: true, data });
 }
@@ -173,16 +184,19 @@ export async function POST(request: NextRequest) {
 #### 2.2.4 Supabase Edge Functions
 
 **使用する場合**:
+
 - ✅ **複数のクライアントから呼び出される**（Web、モバイル等）
 - ✅ **バッチ処理や定期実行**（Cron Jobs）
 - ✅ **サーバーレス関数として独立させたい**
 - ✅ **Supabaseエコシステム内で完結する処理**
 
 **使用しない場合**:
+
 - ❌ Next.jsアプリからのみ呼び出される（Server Actions / API Routesを使用）
 - ❌ セッション管理が必要（Server Actionsを使用）
 
 **実装例**:
+
 ```typescript
 // supabase/functions/generate-summary/index.ts
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
@@ -193,10 +207,10 @@ serve(async (req) => {
     Deno.env.get('SUPABASE_URL') ?? '',
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
   );
-  
+
   // OpenAI API呼び出し
   // ...
-  
+
   return new Response(JSON.stringify({ success: true }), {
     headers: { 'Content-Type': 'application/json' },
   });
@@ -206,16 +220,19 @@ serve(async (req) => {
 #### 2.2.5 Database Functions（PostgreSQL Functions）
 
 **使用する場合**:
+
 - ✅ **データベース内でのみ完結する処理**
 - ✅ **トリガーから呼び出される**
 - ✅ **複雑なSQL処理**（集計、統計計算等）
 - ✅ **RLSポリシーで使用するヘルパー関数**
 
 **使用しない場合**:
+
 - ❌ 外部API呼び出しが必要（API Routes / Edge Functionsを使用）
 - ❌ ビジネスロジック（Server Actionsを使用）
 
 **実装例**:
+
 ```sql
 -- RLSヘルパー関数
 CREATE OR REPLACE FUNCTION is_lab_member(target_lab_id UUID)
@@ -238,18 +255,18 @@ $$ LANGUAGE plpgsql STABLE SECURITY DEFINER;
 
 ## 3. 機能別実装方式マッピング
 
-| 機能 | 実装方式 | 理由 |
-|------|---------|------|
-| **認証・認可** | Supabase Auth（Client SDK） | Supabaseの標準機能 |
-| **CRUD操作** | Supabase Client SDK | RLSで保護されているため直接操作可能 |
-| **フォーム送信** | Server Actions | Next.js App Routerの標準 |
-| **ファイルアップロード** | Server Actions → Supabase Storage | サーバー側での処理が必要 |
-| **AI要約生成** | API Routes → OpenAI API | 外部API呼び出しが必要 |
-| **Marp資料生成** | API Routes → Marp CLI | 外部CLI実行が必要 |
-| **リアルタイム更新** | Supabase Realtime（Client SDK） | Supabaseの標準機能 |
-| **統計情報取得** | Database Functions | 複雑なSQL処理 |
-| **バッチ処理** | Supabase Edge Functions | 定期実行が必要 |
-| **Webhook受信** | API Routes | HTTPエンドポイントが必要 |
+| 機能                     | 実装方式                          | 理由                                |
+| ------------------------ | --------------------------------- | ----------------------------------- |
+| **認証・認可**           | Supabase Auth（Client SDK）       | Supabaseの標準機能                  |
+| **CRUD操作**             | Supabase Client SDK               | RLSで保護されているため直接操作可能 |
+| **フォーム送信**         | Server Actions                    | Next.js App Routerの標準            |
+| **ファイルアップロード** | Server Actions → Supabase Storage | サーバー側での処理が必要            |
+| **AI要約生成**           | API Routes → OpenAI API           | 外部API呼び出しが必要               |
+| **Marp資料生成**         | API Routes → Marp CLI             | 外部CLI実行が必要                   |
+| **リアルタイム更新**     | Supabase Realtime（Client SDK）   | Supabaseの標準機能                  |
+| **統計情報取得**         | Database Functions                | 複雑なSQL処理                       |
+| **バッチ処理**           | Supabase Edge Functions           | 定期実行が必要                      |
+| **Webhook受信**          | API Routes                        | HTTPエンドポイントが必要            |
 
 ---
 
@@ -258,6 +275,7 @@ $$ LANGUAGE plpgsql STABLE SECURITY DEFINER;
 ### 4.1 統一エラーレスポンス形式
 
 **成功時**:
+
 ```typescript
 {
   success: true,
@@ -266,6 +284,7 @@ $$ LANGUAGE plpgsql STABLE SECURITY DEFINER;
 ```
 
 **エラー時**:
+
 ```typescript
 {
   success: false,
@@ -279,14 +298,14 @@ $$ LANGUAGE plpgsql STABLE SECURITY DEFINER;
 
 ### 4.2 エラーコード一覧
 
-| エラーコード | HTTPステータス | 説明 |
-|------------|---------------|------|
-| `UNAUTHORIZED` | 401 | 認証が必要 |
-| `FORBIDDEN` | 403 | 権限不足 |
-| `NOT_FOUND` | 404 | リソースが見つからない |
-| `VALIDATION_ERROR` | 400 | バリデーションエラー |
-| `INTERNAL_ERROR` | 500 | サーバー内部エラー |
-| `EXTERNAL_API_ERROR` | 502 | 外部APIエラー |
+| エラーコード         | HTTPステータス | 説明                   |
+| -------------------- | -------------- | ---------------------- |
+| `UNAUTHORIZED`       | 401            | 認証が必要             |
+| `FORBIDDEN`          | 403            | 権限不足               |
+| `NOT_FOUND`          | 404            | リソースが見つからない |
+| `VALIDATION_ERROR`   | 400            | バリデーションエラー   |
+| `INTERNAL_ERROR`     | 500            | サーバー内部エラー     |
+| `EXTERNAL_API_ERROR` | 502            | 外部APIエラー          |
 
 ### 4.3 実装例
 
@@ -296,14 +315,16 @@ export async function POST(request: NextRequest) {
   try {
     // 認証チェック
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) {
       return NextResponse.json(
         { success: false, error: { code: 'UNAUTHORIZED', message: '認証が必要です' } },
         { status: 401 }
       );
     }
-    
+
     // バリデーション
     const body = await request.json();
     if (!body.activityIds || !Array.isArray(body.activityIds)) {
@@ -312,15 +333,18 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-    
+
     // 処理実行
     const result = await generateSummary(body.activityIds);
-    
+
     return NextResponse.json({ success: true, data: result });
   } catch (error) {
     console.error('Error:', error);
     return NextResponse.json(
-      { success: false, error: { code: 'INTERNAL_ERROR', message: 'サーバーエラーが発生しました' } },
+      {
+        success: false,
+        error: { code: 'INTERNAL_ERROR', message: 'サーバーエラーが発生しました' },
+      },
       { status: 500 }
     );
   }
@@ -336,15 +360,21 @@ export async function POST(request: NextRequest) {
 すべてのAPIはSupabase Authを使用して認証を行う。
 
 **Client SDK**:
+
 ```typescript
 const supabase = createClient();
-const { data: { user } } = await supabase.auth.getUser();
+const {
+  data: { user },
+} = await supabase.auth.getUser();
 ```
 
 **Server Actions / API Routes**:
+
 ```typescript
 const supabase = await createClient();
-const { data: { user } } = await supabase.auth.getUser();
+const {
+  data: { user },
+} = await supabase.auth.getUser();
 if (!user) throw new Error('Unauthorized');
 ```
 
@@ -364,19 +394,20 @@ if (!user) throw new Error('Unauthorized');
 ```
 
 **例**:
+
 - `/app/api/v1/ai/summarize/route.ts`
 - `/app/api/v1/ai/generate-slides/route.ts`
 - `/app/api/v1/webhooks/stripe/route.ts`
 
 ### 6.2 HTTPメソッド
 
-| メソッド | 用途 |
-|---------|------|
-| `GET` | リソース取得 |
-| `POST` | リソース作成、アクション実行 |
-| `PUT` | リソース更新（完全置換） |
-| `PATCH` | リソース更新（部分更新） |
-| `DELETE` | リソース削除 |
+| メソッド | 用途                         |
+| -------- | ---------------------------- |
+| `GET`    | リソース取得                 |
+| `POST`   | リソース作成、アクション実行 |
+| `PUT`    | リソース更新（完全置換）     |
+| `PATCH`  | リソース更新（部分更新）     |
+| `DELETE` | リソース削除                 |
 
 ### 6.3 バージョニング
 
@@ -394,6 +425,7 @@ src/features/{domain}/actions/{actionName}.ts
 ```
 
 **例**:
+
 - `src/features/activity/actions/createActivity.ts`
 - `src/features/activity/actions/updateActivity.ts`
 - `src/features/project/actions/createProject.ts`
@@ -531,4 +563,3 @@ supabase/functions/{function-name}/index.ts
 - **セキュリティ**: 認証・認可を必ず実装
 - **エラーハンドリング**: 統一された形式で実装
 - **型安全性**: TypeScriptで型定義を実装
-
