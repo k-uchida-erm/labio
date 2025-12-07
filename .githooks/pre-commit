@@ -21,6 +21,10 @@ if command -v npx >/dev/null 2>&1; then
     grep -v "^Connecting to db" "$TEMP_TYPES_FILE" > src/types/database.types.ts
     echo "✅ ローカルSupabaseから型定義を生成しました（開発中の変更を反映）"
     rm -f "$TEMP_TYPES_FILE"
+    # 型定義ファイルを確実にステージング
+    if [ -f src/types/database.types.ts ]; then
+      git add src/types/database.types.ts || echo "⚠️  型定義ファイルのステージングに失敗しました"
+    fi
   else
     # ローカルが起動していない場合はリモートから生成（フォールバック）
     echo "⚠️  ローカルSupabaseが起動していないため、リモートから型定義を生成します..."
@@ -30,8 +34,11 @@ if command -v npx >/dev/null 2>&1; then
     else
       npx supabase gen types typescript --project-id ucsurbtmhabygssexisq > src/types/database.types.ts
     fi
+    # 型定義ファイルを確実にステージング
+    if [ -f src/types/database.types.ts ]; then
+      git add src/types/database.types.ts || echo "⚠️  型定義ファイルのステージングに失敗しました"
+    fi
   fi
-  git add src/types/database.types.ts 2>/dev/null || true
 fi
 
 # すべてのPrettier対応ファイルをフォーマット
