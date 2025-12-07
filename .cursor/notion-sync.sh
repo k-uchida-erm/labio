@@ -6,8 +6,11 @@
 # set +a: 自動エクスポートを無効化
 if [ -f .env.local ]; then
   set -a
-  # コメント行と空行を除外して読み込み
-  source <(grep -v '^#' .env.local | grep -v '^$')
+  # コメント行と空行を除外して読み込み（一時ファイルを使用）
+  TEMP_ENV=$(mktemp) || exit 1
+  grep -v '^#' .env.local | grep -v '^$' > "$TEMP_ENV"
+  source "$TEMP_ENV"
+  rm -f "$TEMP_ENV"
   set +a
 fi
 
