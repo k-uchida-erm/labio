@@ -402,6 +402,7 @@ export type Database = {
           is_personal: boolean;
           name: string;
           slug: string;
+          test_column: string | null;
           updated_at: string;
         };
         Insert: {
@@ -413,6 +414,7 @@ export type Database = {
           is_personal?: boolean;
           name: string;
           slug: string;
+          test_column?: string | null;
           updated_at?: string;
         };
         Update: {
@@ -424,6 +426,7 @@ export type Database = {
           is_personal?: boolean;
           name?: string;
           slug?: string;
+          test_column?: string | null;
           updated_at?: string;
         };
         Relationships: [];
