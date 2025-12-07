@@ -4,7 +4,21 @@
 # ステージングされたファイルをチェック
 STAGED_FILES=$(git diff --cached --name-only)
 
-# Supabase型定義を毎回生成してステージング（フォーマット前に実行）
+# すべてのPrettier対応ファイルをフォーマット（型定義生成の前に実行）
+echo "🔧 自動フォーマット・Lint修正を実行中..."
+
+# Prettierで自動フォーマット（全ファイル）
+echo "  📝 Prettierでフォーマット中..."
+npx prettier --write . 2>/dev/null || true
+
+# TypeScript/JavaScriptファイルに対してESLintで自動修正
+TS_JS_FILES=$(echo "$STAGED_FILES" | grep -E '\.(ts|tsx|js|jsx)$' || true)
+if [ -n "$TS_JS_FILES" ]; then
+  echo "  🔍 ESLintで自動修正中..."
+  npx eslint . --fix 2>/dev/null || true
+fi
+
+# Supabase型定義を毎回生成してステージング（フォーマット後に実行）
 # 注意: 型定義はリモート（labio-dev）のスキーマと一致させる必要がある
 # ローカル開発では、ローカルSupabaseから生成（開発中の変更を反映）
 # CI/CDでは、リモートから生成してコミット（リモートの状態を反映）
@@ -21,10 +35,6 @@ if command -v npx >/dev/null 2>&1; then
     grep -v "^Connecting to db" "$TEMP_TYPES_FILE" > src/types/database.types.ts
     echo "✅ ローカルSupabaseから型定義を生成しました（開発中の変更を反映）"
     rm -f "$TEMP_TYPES_FILE"
-    # 型定義ファイルを確実にステージング
-    if [ -f src/types/database.types.ts ]; then
-      git add src/types/database.types.ts || echo "⚠️  型定義ファイルのステージングに失敗しました"
-    fi
   else
     # ローカルが起動していない場合はリモートから生成（フォールバック）
     echo "⚠️  ローカルSupabaseが起動していないため、リモートから型定義を生成します..."
@@ -34,34 +44,44 @@ if command -v npx >/dev/null 2>&1; then
     else
       npx supabase gen types typescript --project-id ucsurbtmhabygssexisq > src/types/database.types.ts
     fi
-    # 型定義ファイルを確実にステージング
-    if [ -f src/types/database.types.ts ]; then
-      git add src/types/database.types.ts || echo "⚠️  型定義ファイルのステージングに失敗しました"
-    fi
+  fi
+  
+  # 型定義ファイルをPrettierでフォーマット（生成後に再フォーマット）
+  if [ -f src/types/database.types.ts ]; then
+    npx prettier --write src/types/database.types.ts 2>/dev/null || true
   fi
 fi
 
-# すべてのPrettier対応ファイルをフォーマット
-echo "🔧 自動フォーマット・Lint修正を実行中..."
+# 修正されたファイルをすべてステージング
+# Prettier/ESLint/型定義生成で変更されたファイルをすべて検出してステージング
+echo "  📦 変更されたファイルをステージング中..."
 
-# Prettierで自動フォーマット（全ファイル）
-echo "  📝 Prettierでフォーマット中..."
-npx prettier --write . 2>/dev/null || true
+# 変更されたファイルを検出（ステージング済み + 未ステージング）
+# ステージング済みの変更ファイル
+STAGED_CHANGED=$(git diff --cached --name-only --diff-filter=ACMR 2>/dev/null || true)
+# 未ステージングの変更ファイル（Prettier/ESLintで変更された可能性がある）
+UNSTAGED_CHANGED=$(git diff --name-only --diff-filter=ACMR 2>/dev/null || true)
 
-# TypeScript/JavaScriptファイルに対してESLintで自動修正
-TS_JS_FILES=$(echo "$STAGED_FILES" | grep -E '\.(ts|tsx|js|jsx)$' || true)
-if [ -n "$TS_JS_FILES" ]; then
-  echo "  🔍 ESLintで自動修正中..."
-  npx eslint . --fix 2>/dev/null || true
+# すべての変更されたファイルをステージング
+if [ -n "$STAGED_CHANGED" ]; then
+  echo "$STAGED_CHANGED" | while IFS= read -r file; do
+    if [ -n "$file" ] && [ -f "$file" ]; then
+      git add "$file" 2>/dev/null || true
+    fi
+  done
 fi
 
-# 修正されたファイルを再度ステージング（元々ステージングされていたファイルのみ）
-# ファイル名にスペースや改行が含まれている場合に対応するため、null区切りで処理
-if [ -n "$STAGED_FILES" ]; then
-  # 元々ステージングされていたファイルをnull区切りで取得し、再ステージング
-  # xargs -0 を使用してnull区切りのファイル名を安全に処理
-  # 注意: -r オプションはGNU拡張のため、ifチェックで既に空チェック済み
-  git diff --cached --name-only -z | xargs -0 git add 2>/dev/null || true
+if [ -n "$UNSTAGED_CHANGED" ]; then
+  echo "$UNSTAGED_CHANGED" | while IFS= read -r file; do
+    if [ -n "$file" ] && [ -f "$file" ]; then
+      git add "$file" 2>/dev/null || true
+    fi
+  done
+fi
+
+# 型定義ファイルを確実にステージング（Prettierでフォーマットされた後）
+if [ -f src/types/database.types.ts ]; then
+  git add src/types/database.types.ts 2>/dev/null && echo "✅ 型定義ファイルをステージングしました"
 fi
 
 echo "✅ 自動フォーマット・Lint修正が完了しました"
