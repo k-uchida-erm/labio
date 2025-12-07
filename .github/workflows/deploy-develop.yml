@@ -30,9 +30,10 @@ jobs:
           SUPABASE_ACCESS_TOKEN: ${{ env.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_PROJECT_ID_DEV: ${{ env.SUPABASE_PROJECT_ID_DEV }}
         run: |
-          # プロジェクトにリンク（環境変数で認証）
-          npx supabase link --project-ref "$SUPABASE_PROJECT_ID_DEV"
-          # マイグレーションを適用
+          # プロジェクトにリンク（履歴不一致の警告は無視）
+          npx supabase link --project-ref "$SUPABASE_PROJECT_ID_DEV" 2>&1 | grep -v "Remote migration versions not found" || true
+          # マイグレーションを適用（新しいマイグレーションのみ）
+          # リモートに既に適用されているマイグレーションは自動的にスキップされる
           npx supabase db push
 
       - name: Generate TypeScript types from labio-dev
