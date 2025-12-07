@@ -222,14 +222,20 @@ echo "$STAGED_MIGRATIONS" | while IFS= read -r migration_file; do
     
     rm -f "$temp_file"
     
-    if [ -n "$children_blocks" ]; then
-      children_block=",\"children\":[$children_blocks]"
-    else
-      children_block=""
-    fi
+  if [ -n "$children_blocks" ]; then
+    children_block=",\"children\":[$children_blocks]"
   else
     children_block=""
   fi
+  else
+    children_block=""
+  fi
+  
+  # JSON特殊文字をエスケープ
+  name_escaped=$(printf "%s" "$name" | sed 's/\\/\\\\/g' | sed 's/"/\\"/g')
+  branch_escaped=$(printf "%s" "$BRANCH" | sed 's/\\/\\\\/g' | sed 's/"/\\"/g')
+  sha_escaped=$(printf "%s" "$COMMIT_SHA" | sed 's/\\/\\\\/g' | sed 's/"/\\"/g')
+  author_escaped=$(printf "%s" "$AUTHOR" | sed 's/\\/\\\\/g' | sed 's/"/\\"/g')
   
   # Notion APIを呼び出し
   response=$(curl -s -w "\n%{http_code}" -X POST https://api.notion.com/v1/pages \
@@ -244,7 +250,7 @@ echo "$STAGED_MIGRATIONS" | while IFS= read -r migration_file; do
       \"properties\": {
         \"Migration File\": {
           \"title\": [
-            { \"text\": { \"content\": \"$name\" } }
+            { \"text\": { \"content\": \"$name_escaped\" } }
           ]
         },
         \"Timestamp\": {
@@ -252,17 +258,17 @@ echo "$STAGED_MIGRATIONS" | while IFS= read -r migration_file; do
         },
         \"Branch\": {
           \"rich_text\": [
-            { \"text\": { \"content\": \"$BRANCH\" } }
+            { \"text\": { \"content\": \"$branch_escaped\" } }
           ]
         },
         \"Commit SHA\": {
           \"rich_text\": [
-            { \"text\": { \"content\": \"$COMMIT_SHA\" } }
+            { \"text\": { \"content\": \"$sha_escaped\" } }
           ]
         },
         \"Author\": {
           \"rich_text\": [
-            { \"text\": { \"content\": \"$AUTHOR\" } }
+            { \"text\": { \"content\": \"$author_escaped\" } }
           ]
         }
       }${children_block}
