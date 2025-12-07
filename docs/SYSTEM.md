@@ -11,7 +11,7 @@ Labioプロジェクトの現状のシステム構成を説明します。
 | 環境         | Supabaseプロジェクト                             | 用途                 | 環境変数                     |
 | ------------ | ------------------------------------------------ | -------------------- | ---------------------------- |
 | **開発環境** | `labio-dev` (Project ID: `ucsurbtmhabygssexisq`) | ローカル開発、テスト | `.env.local`                 |
-| **本番環境** | `labio-pro` (Project ID: `pnhgavzooyusuzsmuvev`) | 本番デプロイ         | Vercel Environment Variables |
+| **本番環境** | `labio-prod` (Project ID: `pnhgavzooyusuzsmuvev`) | 本番デプロイ         | Vercel Environment Variables |
 
 ### データベース
 
@@ -236,18 +236,18 @@ SUPABASE_SERVICE_ROLE_KEY=your-prod-service-role-key
 
 **環境**:
 
-- Production: 本番環境（main → labio-pro）
+- Production: 本番環境（main → labio-prod）
 - Preview: PRごとのPreview環境
 - Development: ローカル開発（デフォルトはローカルSupabase／必要時のみ develop = labio-dev に切替）
 
 ## 🚀 開発フロー概要（運用）
 
-- ブランチ戦略: `develop` から `feature/aa_bb`（タスク名をスネークケース）を切る。`develop` は labio-dev、`main` は labio-pro に接続
+- ブランチ戦略: `develop` から `feature/aa_bb`（タスク名をスネークケース）を切る。`develop` は labio-dev、`main` は labio-prod に接続
 - UI: Figmaまたは既存ページを参照し、コード上で0から新デザインを作らない
 - DB: マイグレーションファイルを直接作成（`npx supabase migration new`）。MCP（`mcp_supabase_local_pg_query`）は読み取り専用で使用。pre-commit で型生成と危険DDLチェック（DROP/TRUNCATE）およびマイグレ有無チェック
 - テスト: 必要に応じ `make test` などを実行
 - レビュー: PR → CodeRabbit → 指摘対応 → develop へマージ（labio-devにマイグレ適用）
-- 本番: main へマージで labio-pro、本番用環境変数は GitHub Secrets から注入され Vercel に自動デプロイ
+- 本番: main へマージで labio-prod、本番用環境変数は GitHub Secrets から注入され Vercel に自動デプロイ
 
 ---
 
@@ -368,7 +368,7 @@ mainブランチにマージ
   ↓
 GitHub Actions
   ↓
-本番環境（labio-pro）に自動適用
+本番環境（labio-prod）に自動適用
 ```
 
 ---

@@ -1,15 +1,21 @@
 {
   "mcpServers": {
-    "supabase": {
+    "supabase_local_pg": {
       "command": ".cursor/load-env.sh",
-      "args": ["npx", "-y", "@supabase/mcp-server-supabase@latest"],
-      "env": {
-        "SUPABASE_PROJECT_ID": "${SUPABASE_PROJECT_ID_LOCAL}"
-      }
+      "args": [
+        "npx",
+        "-y",
+        "@modelcontextprotocol/server-postgres@latest",
+        "postgresql://postgres:postgres@127.0.0.1:54322/postgres"
+      ]
     },
     "figma": {
       "command": ".cursor/load-env.sh",
-      "args": ["npx", "-y", "@modelcontextprotocol/server-figma@latest"]
+      "args": [
+        "npx",
+        "-y",
+        "@modelcontextprotocol/server-figma@latest"
+      ]
     }
   }
 }

@@ -80,7 +80,7 @@ cp env.develop.example .env.develop
 - デフォルト: `.env.local` でローカルSupabase（127.0.0.1:54321）を使う
 - 共有開発環境（develop/labio-devなど）: `.env.develop` を用意し、必要時のみ `make env-use-develop` で一時切替。終わったら `make env-restore-local` で戻す
 - ローカルSupabaseの起動/停止: `make supabase-start` / `make supabase-stop`
-- ブランチと接続先: `develop` は `labio-dev` に接続、`main` は `labio-pro` に接続（本番）
+- ブランチと接続先: `develop` は `labio-dev` に接続、`main` は `labio-prod` に接続（本番）
 
 ### 3. Makeコマンドの設定（Preztoユーザー向け）
 
@@ -165,7 +165,7 @@ make db-types     # Supabase型定義を生成
 4. テスト・Lint等を実行（必要に応じて `make test` など）
 5. PR作成 → CodeRabbitレビュー → 指摘対応
 6. develop へマージすると labio-dev でマイグレ適用（CI）、develop環境で動作確認したい場合は `make env-use-develop` で `.env.local` を切替えてテスト
-7. main へマージすると labio-pro に紐づき、本番用環境変数は GitHub Secrets から注入され Vercel に自動デプロイ
+7. main へマージすると labio-prod に紐づき、本番用環境変数は GitHub Secrets から注入され Vercel に自動デプロイ
 
 ### 依存関係の追加
 

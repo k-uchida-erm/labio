@@ -34,6 +34,7 @@ jobs:
           npx supabase link --project-ref "$SUPABASE_PROJECT_ID_DEV" 2>&1 | grep -v "Remote migration versions not found" || true
           # マイグレーションを適用（新しいマイグレーションのみ）
           # リモートに既に適用されているマイグレーションは自動的にスキップされる
+          # 注意: 今後はMCPで書き込みができないため、必ずマイグレーションファイルを書く運用
           npx supabase db push
 
       - name: Generate TypeScript types from labio-dev
