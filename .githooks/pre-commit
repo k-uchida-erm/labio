@@ -12,11 +12,19 @@ if command -v npx >/dev/null 2>&1; then
   echo "🧬 Supabase型定義を生成中..."
   # ローカルSupabaseから型定義を生成（開発中の変更を反映）
   # 出力の最初の行「Connecting to db...」を削除
-  if npx supabase gen types typescript --local 2>&1 | grep -v "^Connecting to db" > src/types/database.types.ts; then
+  # パイプラインの終了ステータス問題を回避するため、一時ファイルを使用
+  TEMP_TYPES_FILE=$(mktemp) || exit 1
+  trap "rm -f '$TEMP_TYPES_FILE'" EXIT
+  
+  if npx supabase gen types typescript --local > "$TEMP_TYPES_FILE" 2>&1; then
+    # 成功した場合のみ、Connecting to db行を削除して出力
+    grep -v "^Connecting to db" "$TEMP_TYPES_FILE" > src/types/database.types.ts
     echo "✅ ローカルSupabaseから型定義を生成しました（開発中の変更を反映）"
+    rm -f "$TEMP_TYPES_FILE"
   else
     # ローカルが起動していない場合はリモートから生成（フォールバック）
     echo "⚠️  ローカルSupabaseが起動していないため、リモートから型定義を生成します..."
+    rm -f "$TEMP_TYPES_FILE"
     if [ -x ".cursor/load-env.sh" ]; then
       bash .cursor/load-env.sh sh -c 'npx supabase gen types typescript --project-id ucsurbtmhabygssexisq > src/types/database.types.ts'
     else
