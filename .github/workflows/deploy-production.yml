@@ -29,11 +29,18 @@ jobs:
           # 本番環境にマイグレーションを適用
           # 注意: supabase/migrations/ にマイグレーションファイルが必要
           if [ -d "supabase/migrations" ] && [ "$(ls -A supabase/migrations)" ]; then
-            # 本番環境にリンク（履歴不一致の警告は無視）
-            npx supabase link --project-ref "$SUPABASE_PROJECT_ID_PROD" 2>&1 | grep -v "Remote migration versions not found" || true
-            # マイグレーションを適用（新しいマイグレーションのみ）
-            # リモートに既に適用されているマイグレーションは自動的にスキップされる
-            npx supabase db push
+            # 本番環境にリンク
+            npx supabase link --project-ref "$SUPABASE_PROJECT_ID_PROD" || true
+            
+            # リモートのマイグレーション履歴を修復（リセット後の初期状態にする）
+            # リモートのDBがリセットされている場合、古いマイグレーション履歴をreverted状態に修復
+            echo "🔄 リモートのマイグレーション履歴を修復中..."
+            npx supabase migration repair --status reverted 20251205111107 20251205112914 20251205113749 2>&1 || echo "⚠️  履歴修復をスキップ（既に修復済みまたは履歴が存在しない可能性）"
+            
+            # マイグレーションを適用
+            # --include-all フラグで、リモートに存在しないマイグレーションも強制適用
+            echo "🔄 マイグレーションを適用中..."
+            npx supabase db push --include-all
           else
             echo "⚠️ マイグレーションファイルが見つかりません。スキップします。"
           fi

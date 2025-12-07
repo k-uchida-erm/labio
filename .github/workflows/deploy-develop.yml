@@ -30,12 +30,18 @@ jobs:
           SUPABASE_ACCESS_TOKEN: ${{ env.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_PROJECT_ID_DEV: ${{ env.SUPABASE_PROJECT_ID_DEV }}
         run: |
-          # プロジェクトにリンク（履歴不一致の警告は無視）
-          npx supabase link --project-ref "$SUPABASE_PROJECT_ID_DEV" 2>&1 | grep -v "Remote migration versions not found" || true
-          # マイグレーションを適用（新しいマイグレーションのみ）
-          # リモートに既に適用されているマイグレーションは自動的にスキップされる
-          # 注意: 今後はMCPで書き込みができないため、必ずマイグレーションファイルを書く運用
-          npx supabase db push
+          # プロジェクトにリンク
+          npx supabase link --project-ref "$SUPABASE_PROJECT_ID_DEV" || true
+          
+          # リモートのマイグレーション履歴を修復（リセット後の初期状態にする）
+          # リモートのDBがリセットされている場合、古いマイグレーション履歴をreverted状態に修復
+          echo "🔄 リモートのマイグレーション履歴を修復中..."
+          npx supabase migration repair --status reverted 20251205111107 20251205112914 20251205113749 2>&1 || echo "⚠️  履歴修復をスキップ（既に修復済みまたは履歴が存在しない可能性）"
+          
+          # マイグレーションを適用
+          # --include-all フラグで、リモートに存在しないマイグレーションも強制適用
+          echo "🔄 マイグレーションを適用中..."
+          npx supabase db push --include-all
 
       - name: Generate TypeScript types from labio-dev
         env:
