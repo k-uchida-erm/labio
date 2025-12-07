@@ -54,6 +54,7 @@
 **説明**: Supabase Authで新規ユーザーが作成された際、`profiles`テーブルにプロフィールを自動作成
 
 **処理内容**:
+
 - `auth.users`の`id`, `email`を`profiles`にコピー
 - `display_name`は`raw_user_meta_data`から取得、なければメールアドレスの@より前の部分を使用
 - `avatar_url`は`raw_user_meta_data`から取得
@@ -87,6 +88,7 @@
 **説明**: Lab作成時に`name`から`slug`を自動生成（URL用の一意な識別子）
 
 **処理内容**:
+
 - Lab名を小文字化、特殊文字をハイフンに置換（例: `東京大学AI研究室` → `tokyo-univ-ai-lab`）
 - 既存のslugと重複しないように、末尾にランダムな数桁（4-6桁）を付与（例: `tokyo-univ-ai-lab-a3f2`）
 - ユニーク性を確保するため、重複チェックを実施
@@ -108,6 +110,7 @@
 **説明**: 招待のステータスが`pending`から`accepted`に変更された際、自動的に`lab_members`に追加
 
 **処理内容**:
+
 - 招待されたユーザーの`profiles.id`を取得
 - `lab_members`に`is_owner`フラグを設定して追加（招待時の`is_owner`フラグを使用）
 
@@ -164,6 +167,7 @@
 **説明**: Activity作成時に`sequence_number`を自動設定（Project内で連番）
 
 **処理内容**:
+
 - 同じ`project_id`のActivityの最大`sequence_number`を取得
 - 最大値+1を設定（初回は1）
 - 削除済み（`deleted_at IS NOT NULL`）は除外
@@ -178,7 +182,8 @@
 
 **テーブル**: `activities`
 
-**説明**: 
+**説明**:
+
 - 新規作成時: 同じ`project_id`と`status`の最後尾に配置
 - 更新時: `status`が変更された場合、新しい`status`の最後尾に移動
 
@@ -256,7 +261,8 @@
 
 **説明**: 招待用のランダムトークン（32バイトのhex文字列）を生成
 
-**呼び出し元**: 
+**呼び出し元**:
+
 - Server Actions / API Routesから直接呼び出し可能
 - データベース内でのみ完結する処理
 
@@ -270,7 +276,8 @@
 
 **説明**: Lab名からURL用のスラッグを生成（小文字化、特殊文字をハイフンに置換、一意性を確保）
 
-**呼び出し元**: 
+**呼び出し元**:
+
 - `set_lab_slug()`トリガーから呼び出される
 - Server Actions / API Routesから直接呼び出し可能
 
@@ -285,12 +292,14 @@
 **説明**: Labの統計情報を取得（[`api/api-design.md`](../api/api-design.md)の機能別実装方式マッピングに記載）
 
 **返却内容**:
+
 - `member_count`: メンバー数
 - `project_count`: プロジェクト数（削除・アーカイブ済みを除く）
 - `activity_count`: Activity数（削除済みを除く）
 - `activity_by_status`: ステータス別のActivity数
 
-**呼び出し元**: 
+**呼び出し元**:
+
 - Server Actions / API Routesから直接呼び出し可能
 - 複雑なSQL処理（集計、統計計算）
 
@@ -300,45 +309,45 @@
 
 ## 10. トリガー一覧
 
-| トリガー名 | テーブル | イベント | 説明 | 使用基準 |
-|-----------|---------|---------|------|---------|
-| `on_auth_user_created` | `auth.users` | AFTER INSERT | プロフィール自動作成 | ✅ トリガーから呼び出される |
-| `on_lab_created` | `labs` | AFTER INSERT | ownerメンバー追加 | ✅ トリガーから呼び出される |
-| `set_lab_slug_trigger` | `labs` | BEFORE INSERT | slug自動生成 | ✅ トリガーから呼び出される |
-| `on_invitation_status_changed` | `lab_invitations` | BEFORE UPDATE | 招待承認時メンバー追加 | ✅ トリガーから呼び出される |
-| `check_invitation_expiry_on_update` | `lab_invitations` | BEFORE UPDATE | 有効期限チェック | ✅ トリガーから呼び出される |
-| `set_activity_completed_at_trigger` | `activities` | BEFORE UPDATE | 完了日時自動設定 | ✅ トリガーから呼び出される |
-| `set_activity_started_at_trigger` | `activities` | BEFORE UPDATE | 開始日時自動設定 | ✅ トリガーから呼び出される |
-| `set_activity_position_trigger` | `activities` | BEFORE INSERT | 位置自動設定 | ✅ トリガーから呼び出される |
-| `recalculate_activity_position_trigger` | `activities` | BEFORE UPDATE | 位置再計算 | ✅ トリガーから呼び出される |
-| `notify_activity_changes` | `activities` | AFTER INSERT/UPDATE/DELETE | Activity変更通知 | ✅ トリガーから呼び出される |
-| `notify_comment_added_trigger` | `comments` | AFTER INSERT | コメント追加通知 | ✅ トリガーから呼び出される |
-| `soft_delete_lab_related_data_trigger` | `labs` | AFTER UPDATE | 関連データソフトデリート | ✅ トリガーから呼び出される |
-| `soft_delete_project_activities_trigger` | `projects` | AFTER UPDATE | Activity連動削除 | ✅ トリガーから呼び出される |
-| `update_*_updated_at` | 各テーブル | BEFORE UPDATE | updated_at自動更新 | ✅ トリガーから呼び出される |
+| トリガー名                               | テーブル          | イベント                   | 説明                     | 使用基準                    |
+| ---------------------------------------- | ----------------- | -------------------------- | ------------------------ | --------------------------- |
+| `on_auth_user_created`                   | `auth.users`      | AFTER INSERT               | プロフィール自動作成     | ✅ トリガーから呼び出される |
+| `on_lab_created`                         | `labs`            | AFTER INSERT               | ownerメンバー追加        | ✅ トリガーから呼び出される |
+| `set_lab_slug_trigger`                   | `labs`            | BEFORE INSERT              | slug自動生成             | ✅ トリガーから呼び出される |
+| `on_invitation_status_changed`           | `lab_invitations` | BEFORE UPDATE              | 招待承認時メンバー追加   | ✅ トリガーから呼び出される |
+| `check_invitation_expiry_on_update`      | `lab_invitations` | BEFORE UPDATE              | 有効期限チェック         | ✅ トリガーから呼び出される |
+| `set_activity_completed_at_trigger`      | `activities`      | BEFORE UPDATE              | 完了日時自動設定         | ✅ トリガーから呼び出される |
+| `set_activity_started_at_trigger`        | `activities`      | BEFORE UPDATE              | 開始日時自動設定         | ✅ トリガーから呼び出される |
+| `set_activity_position_trigger`          | `activities`      | BEFORE INSERT              | 位置自動設定             | ✅ トリガーから呼び出される |
+| `recalculate_activity_position_trigger`  | `activities`      | BEFORE UPDATE              | 位置再計算               | ✅ トリガーから呼び出される |
+| `notify_activity_changes`                | `activities`      | AFTER INSERT/UPDATE/DELETE | Activity変更通知         | ✅ トリガーから呼び出される |
+| `notify_comment_added_trigger`           | `comments`        | AFTER INSERT               | コメント追加通知         | ✅ トリガーから呼び出される |
+| `soft_delete_lab_related_data_trigger`   | `labs`            | AFTER UPDATE               | 関連データソフトデリート | ✅ トリガーから呼び出される |
+| `soft_delete_project_activities_trigger` | `projects`        | AFTER UPDATE               | Activity連動削除         | ✅ トリガーから呼び出される |
+| `update_*_updated_at`                    | 各テーブル        | BEFORE UPDATE              | updated_at自動更新       | ✅ トリガーから呼び出される |
 
 ---
 
 ## 11. 関数一覧と使用基準
 
-| 関数名 | 呼び出し元 | 使用基準 | 備考 |
-|--------|-----------|---------|------|
-| `update_updated_at_column()` | トリガー | ✅ トリガーから呼び出される | |
-| `handle_new_user()` | トリガー | ✅ トリガーから呼び出される | |
-| `add_owner_on_lab_created()` | トリガー | ✅ トリガーから呼び出される | |
-| `set_lab_slug()` | トリガー | ✅ トリガーから呼び出される | |
-| `add_member_on_invitation_accepted()` | トリガー | ✅ トリガーから呼び出される | |
-| `check_invitation_expiry()` | トリガー | ✅ トリガーから呼び出される | |
-| `set_activity_completed_at()` | トリガー | ✅ トリガーから呼び出される | |
-| `set_activity_started_at()` | トリガー | ✅ トリガーから呼び出される | |
-| `set_activity_position()` | トリガー | ✅ トリガーから呼び出される | |
-| `notify_activity_change()` | トリガー | ✅ トリガーから呼び出される | `pg_notify`使用 |
-| `notify_comment_added()` | トリガー | ✅ トリガーから呼び出される | `pg_notify`使用 |
-| `soft_delete_lab_related_data()` | トリガー | ✅ トリガーから呼び出される | |
-| `soft_delete_project_activities()` | トリガー | ✅ トリガーから呼び出される | |
-| `generate_invitation_token()` | Server Actions / API Routes | ✅ データベース内完結 | `gen_random_bytes`使用 |
-| `generate_slug()` | トリガー / Server Actions / API Routes | ✅ データベース内完結、トリガーから呼び出される | |
-| `get_lab_statistics()` | Server Actions / API Routes | ✅ 複雑なSQL処理 | [`api/api-design.md`](../api/api-design.md)に記載 |
+| 関数名                                | 呼び出し元                             | 使用基準                                        | 備考                                              |
+| ------------------------------------- | -------------------------------------- | ----------------------------------------------- | ------------------------------------------------- |
+| `update_updated_at_column()`          | トリガー                               | ✅ トリガーから呼び出される                     |                                                   |
+| `handle_new_user()`                   | トリガー                               | ✅ トリガーから呼び出される                     |                                                   |
+| `add_owner_on_lab_created()`          | トリガー                               | ✅ トリガーから呼び出される                     |                                                   |
+| `set_lab_slug()`                      | トリガー                               | ✅ トリガーから呼び出される                     |                                                   |
+| `add_member_on_invitation_accepted()` | トリガー                               | ✅ トリガーから呼び出される                     |                                                   |
+| `check_invitation_expiry()`           | トリガー                               | ✅ トリガーから呼び出される                     |                                                   |
+| `set_activity_completed_at()`         | トリガー                               | ✅ トリガーから呼び出される                     |                                                   |
+| `set_activity_started_at()`           | トリガー                               | ✅ トリガーから呼び出される                     |                                                   |
+| `set_activity_position()`             | トリガー                               | ✅ トリガーから呼び出される                     |                                                   |
+| `notify_activity_change()`            | トリガー                               | ✅ トリガーから呼び出される                     | `pg_notify`使用                                   |
+| `notify_comment_added()`              | トリガー                               | ✅ トリガーから呼び出される                     | `pg_notify`使用                                   |
+| `soft_delete_lab_related_data()`      | トリガー                               | ✅ トリガーから呼び出される                     |                                                   |
+| `soft_delete_project_activities()`    | トリガー                               | ✅ トリガーから呼び出される                     |                                                   |
+| `generate_invitation_token()`         | Server Actions / API Routes            | ✅ データベース内完結                           | `gen_random_bytes`使用                            |
+| `generate_slug()`                     | トリガー / Server Actions / API Routes | ✅ データベース内完結、トリガーから呼び出される |                                                   |
+| `get_lab_statistics()`                | Server Actions / API Routes            | ✅ 複雑なSQL処理                                | [`api/api-design.md`](../api/api-design.md)に記載 |
 
 ---
 

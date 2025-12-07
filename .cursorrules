@@ -110,13 +110,13 @@ src/
 7. **テストを作成**（tests/unit/ または tests/e2e/）
 
 【仕様書】
-- [関連する仕様書のパスを指定、例: docs/specs/features/activity.md]
-- **必須**: 機能追加時は必ず仕様書を更新または作成する
+- 着手前に該当ドメイン・ページの仕様書を必ず確認
+- 実装・仕様変更があれば、対応する仕様書（例: docs/specs/features/activity.md, docs/specs/pages-design.md など）を必ず更新
 
 【データベース】
 - [使用するテーブルを指定]
 - RLSポリシーを確認
-- DB変更時は`docs/specs/database/schema.md`と`current-state.md`を更新
+- DB変更時は`docs/specs/database/schema.md`を更新し、マイグレーションを作成
 
 【テスト】
 - **必須**: 機能追加時は必ずテストを作成する
@@ -138,10 +138,12 @@ src/
 
 #### チェックリスト
 
-- [ ] 機能仕様書を更新または作成（`docs/specs/features/[domain].md`）
+- [ ] 着手前に `docs/` 配下の該当ドキュメント（`docs/`全体を含む）を確認し、最新内容を把握する
+- [ ] 着手前に該当仕様書を確認（ページ設計・機能仕様・API・DB）
+- [ ] 機能仕様書を更新または作成（`docs/specs/features/[domain].md` 等）
 - [ ] コードを実装
 - [ ] テストを作成（`tests/unit/` または `tests/e2e/`）
-- [ ] DB変更時は`docs/specs/database/schema.md`と`current-state.md`を更新
+- [ ] DB変更時は`supabase/migrations/`を追加し、`docs/specs/database/schema.md`を更新
 - [ ] API変更時は`docs/specs/api/api-design.md`を更新（必要に応じて）
 
 ### Figma駆動開発
@@ -160,6 +162,26 @@ src/
 5. 共通化できる部分をコンポーネント化
 6. **テストを作成**
 
+### DB変更時の必須手順
+
+**重要**: DB変更時は、**必ずマイグレーションファイルを作成してコミットする**。これを忘れると本番環境に自動適用されません。
+
+**自動チェック**: Gitフック（pre-commit）とGitHub Actions CIが自動的にチェックします。`src/types/database.types.ts`が変更された場合、`supabase/migrations/`に新しいファイルが追加されていないと、コミットやPRが拒否されます。
+
+#### チェックリスト
+
+- [ ] マイグレーションファイルを作成（`npx supabase migration new migration_name`）
+- [ ] SQLを直接書く（`supabase/migrations/{timestamp}_{name}.sql`）
+- [ ] ローカルDBに適用して動作確認（`npx supabase db reset --local` または `make supabase-reset`）
+- [ ] マイグレーションファイルをコミット・プッシュ
+- [ ] mainブランチにマージ（GitHub Actionsが本番環境に自動適用）
+
+**MCPの使用**:
+- MCP（`mcp_supabase_local_pg_query`）は読み取り専用で使用（テーブル構造の確認など）
+- 書き込みはマイグレーションファイルを直接作成
+
+**詳細**: `docs/SYSTEM.md` の「データベースマイグレーション」セクションを参照
+
 ---
 
 ## 重要な注意事項
@@ -170,6 +192,7 @@ src/
 - **機能追加時にテストを書かない**
 - **機能追加時にドキュメントを更新しない**
 - RLSポリシーを無視する
+- **MCPでSQL実行した後、マイグレーションファイルを取得・コミットしない**
 
 ### ✅ 必ずやること
 - UIとロジックを分離
@@ -179,6 +202,7 @@ src/
 - 既存のデザインパターンに従う
 - 仕様書を確認してから実装
 - **機能追加時は「実装 + ドキュメント + テスト」をセットで追加**
+- **MCPでSQL実行した後は、必ずマイグレーションファイルを取得してコミットする**（本番環境に自動適用するため）
 
 ---
 

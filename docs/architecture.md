@@ -18,18 +18,18 @@
 
 | 機能             | 説明                                                     |
 | ---------------- | -------------------------------------------------------- |
-| lab管理    | 研究室単位のlab管理（先生が作成、生徒が参加） |
-| project管理   | 先生が生徒のproject進捗を一元管理                     |
+| lab管理          | 研究室単位のlab管理（先生が作成、生徒が参加）            |
+| project管理      | 先生が生徒のproject進捗を一元管理                        |
 | Activity管理     | タスク、実験ノート、質問・レビュー、面談・ゼミなどの管理 |
 | マルチビュー     | List / Kanban / Gantt / Calendar / Story ビュー          |
 | AI要約・資料生成 | 選択したActivityをAIがmd形式でまとめ、Marpで資料生成     |
 
 ### 1.4 プラン構成
 
-| プラン       | 対象          | 機能                                                     |
-| ------------ | ------------- | -------------------------------------------------------- |
+| プラン       | 対象          | 機能                                               |
+| ------------ | ------------- | -------------------------------------------------- |
 | 研究室プラン | 研究室（Lab） | lab作成、先生/生徒の権限管理、質問・レビューフロー |
-| 個人プラン   | 個人          | 個人用lab（研究室フローは使用不可）           |
+| 個人プラン   | 個人          | 個人用lab（研究室フローは使用不可）                |
 
 ### 1.5 開発原則
 
@@ -134,14 +134,14 @@ components/activity/
 
 ### 2.3 主要コンポーネント
 
-| コンポーネント | 責務                                 | 依存関係            |
-| -------------- | ------------------------------------ | ------------------- |
-| Auth           | 認証・認可（Supabase Auth）          | Supabase            |
-| lab      | 研究室lab管理             | Auth, Database      |
-| project | project管理                       | lab, Activity |
-| Activity       | タスク/実験ノート/質問等の管理       | project      |
-| View Engine    | List/Kanban/Gantt/Calendar/Story表示 | Activity            |
-| AI Summarizer  | Activity要約・Marp資料生成           | Activity, AI API    |
+| コンポーネント | 責務                                 | 依存関係         |
+| -------------- | ------------------------------------ | ---------------- |
+| Auth           | 認証・認可（Supabase Auth）          | Supabase         |
+| lab            | 研究室lab管理                        | Auth, Database   |
+| project        | project管理                          | lab, Activity    |
+| Activity       | タスク/実験ノート/質問等の管理       | project          |
+| View Engine    | List/Kanban/Gantt/Calendar/Story表示 | Activity         |
+| AI Summarizer  | Activity要約・Marp資料生成           | Activity, AI API |
 
 ---
 
@@ -149,13 +149,13 @@ components/activity/
 
 ### 3.1 フロントエンド
 
-| 技術         | バージョン        | 用途                    |
-| ------------ | ----------------- | ----------------------- |
-| Next.js      | 16.x (App Router) | フレームワーク          |
-| React        | 19.x              | UIライブラリ            |
-| TypeScript   | 5.x               | 型安全性                |
-| Tailwind CSS | 4.x               | スタイリング            |
-| Zod          | 4.x               | バリデーション          |
+| 技術         | バージョン        | 用途           |
+| ------------ | ----------------- | -------------- |
+| Next.js      | 16.x (App Router) | フレームワーク |
+| React        | 19.x              | UIライブラリ   |
+| TypeScript   | 5.x               | 型安全性       |
+| Tailwind CSS | 4.x               | スタイリング   |
+| Zod          | 4.x               | バリデーション |
 
 ### 3.2 バックエンド / データベース
 
@@ -379,7 +379,6 @@ docs/specs/
 │   ├── triggers-functions.md  # トリガー・関数設計
 │   └── current-state.md       # DB現在の状態（型定義生成方法含む）
 ├── pages-design.md            # ページ設計書（MVPロードマップ、ルーティング）
-└── mvp-essentials.md          # MVP必須項目チェックリスト
 ```
 
 詳細は [`docs/README.md`](./README.md) を参照
@@ -399,19 +398,19 @@ docs/specs/
 
 詳細は [`docs/specs/database/schema.md`](./specs/database/schema.md) に記載
 
-| テーブル        | 説明                                      |
-| --------------- | ----------------------------------------- |
-| profiles        | ユーザープロフィール（Supabase Auth連携） |
-| labs            | 研究室（Lab）                             |
-| lab_members     | 研究室メンバー（`is_owner` booleanフラグ） |
-| lab_invitations | Lab招待                                   |
-| projects        | プロジェクト（`key`フィールドでLab内一意） |
+| テーブル        | 説明                                         |
+| --------------- | -------------------------------------------- |
+| profiles        | ユーザープロフィール（Supabase Auth連携）    |
+| labs            | 研究室（Lab）                                |
+| lab_members     | 研究室メンバー（`is_owner` booleanフラグ）   |
+| lab_invitations | Lab招待                                      |
+| projects        | プロジェクト（`key`フィールドでLab内一意）   |
 | activities      | Activity（`sequence_number`でProject内連番） |
-| tags            | タグマスタ（Lab単位で管理）               |
-| activity_tags   | Activityとタグの中間テーブル              |
-| comments        | Activityへのコメント                      |
-| attachments     | 添付ファイル                              |
-| ai_summaries    | AI生成サマリー                            |
+| tags            | タグマスタ（Lab単位で管理）                  |
+| activity_tags   | Activityとタグの中間テーブル                 |
+| comments        | Activityへのコメント                         |
+| attachments     | 添付ファイル                                 |
+| ai_summaries    | AI生成サマリー                               |
 
 ### 6.3 ルーティング設計
 
@@ -443,13 +442,13 @@ Lab、Project、Activityの識別子設計：
 
 ### 7.2 実装方式の選択基準（概要）
 
-| 実装方式 | 使用する場合 |
-|---------|------------|
-| **Supabase Client SDK** | CRUD操作、認証、リアルタイム更新（最優先） |
-| **Server Actions** | フォーム送信、サーバー側での処理 |
-| **API Routes** | 外部API呼び出し、長時間実行、Webhook |
-| **Supabase Edge Functions** | 複数クライアント対応、バッチ処理 |
-| **Database Functions** | データベース内処理、RLSヘルパー |
+| 実装方式                    | 使用する場合                               |
+| --------------------------- | ------------------------------------------ |
+| **Supabase Client SDK**     | CRUD操作、認証、リアルタイム更新（最優先） |
+| **Server Actions**          | フォーム送信、サーバー側での処理           |
+| **API Routes**              | 外部API呼び出し、長時間実行、Webhook       |
+| **Supabase Edge Functions** | 複数クライアント対応、バッチ処理           |
+| **Database Functions**      | データベース内処理、RLSヘルパー            |
 
 詳細な選択基準と実装例は [`docs/specs/api/api-design.md`](./specs/api/api-design.md) を参照
 
@@ -726,7 +725,7 @@ $$ LANGUAGE sql STABLE SECURITY DEFINER;
 
 ## 12. 開発ロードマップ
 
-詳細は [`docs/specs/pages-design.md`](./specs/pages-design.md) の「2. MVPロードマップ」と [`docs/specs/mvp-essentials.md`](./specs/mvp-essentials.md) を参照
+詳細は [`docs/specs/pages-design.md`](./specs/pages-design.md) の「2. MVPロードマップ」を参照
 
 ### 12.1 Phase 1: MVP（最小機能）
 
@@ -740,8 +739,8 @@ Phase 2以降の計画は [`docs/specs/pages-design.md`](./specs/pages-design.md
 
 ## 変更履歴
 
-| 日付       | バージョン | 変更内容                                                       | 変更者 |
-| ---------- | ---------- | -------------------------------------------------------------- | ------ |
-| 2024-12-02 | 1.0        | 初版作成                                                       | -      |
-| 2024-12-02 | 1.1        | 認証・認可設計、Activityステータス、AI機能、デプロイ設計を追加 | -      |
+| 日付       | バージョン | 変更内容                                                                             | 変更者 |
+| ---------- | ---------- | ------------------------------------------------------------------------------------ | ------ |
+| 2024-12-02 | 1.0        | 初版作成                                                                             | -      |
+| 2024-12-02 | 1.1        | 認証・認可設計、Activityステータス、AI機能、デプロイ設計を追加                       | -      |
 | 2024-12-04 | 1.2        | 仕様書の重複を整理、認証・認可設計を`is_owner`ベースに更新、技術スタック情報を最新化 | -      |

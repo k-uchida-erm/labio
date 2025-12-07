@@ -1,6 +1,8 @@
 # 開発環境構築ガイド
 
-このドキュメントでは、Labioの開発環境をセットアップする方法を説明します。
+このドキュメントでは、Labioの開発環境をセットアップする方法と、開発に必要な詳細情報を説明します。
+
+**新規開発者の方は、このドキュメントを最初に読んでください。**
 
 ## 目次
 
@@ -14,11 +16,11 @@
 
 ## 必要条件
 
-| ツール | バージョン | インストール方法                                                   |
-| ------ | ---------- | ------------------------------------------------------------------ |
+| ツール | バージョン | インストール方法                                                  |
+| ------ | ---------- | ----------------------------------------------------------------- |
 | Docker | 20以上     | [Docker Desktop](https://www.docker.com/products/docker-desktop/) |
-| Make   | -          | macOS標準搭載                                                      |
-| Git    | 最新       | `brew install git`                                                 |
+| Make   | -          | macOS標準搭載                                                     |
+| Git    | 最新       | `brew install git`                                                |
 
 > **Note**: Node.jsのローカルインストールは不要です。すべてDocker内で実行されます。
 
@@ -33,32 +35,52 @@ git clone https://github.com/your-org/labio.git
 cd labio
 ```
 
-### 2. 環境変数の設定
+### 2. Gitフックのセットアップ
+
+**重要**: DB変更時にマイグレーションファイルを忘れないように、Gitフックを有効化してください。
+
+```bash
+make setup-hooks
+```
+
+コミット時に自動チェックが実行されます。
+
+### 3. 環境変数の設定（ローカルSupabaseをデフォルトにする）
+
+1. ローカル用（基本これを使う）
 
 ```bash
 cp env.example .env.local
 ```
 
-`.env.local` を編集して、Supabaseの認証情報を設定：
+`.env.local` にローカルSupabaseのURL/キーを入れる（`supabase start` 時に表示される値）:
 
 ```env
-# Supabase（必須）
-NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
-
-# Supabase（サーバーサイドのみ）
-SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
-SUPABASE_PROJECT_ID=your-project-id
+NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<local anon>
+SUPABASE_SERVICE_ROLE_KEY=<local service_role>
+# SUPABASE_PROJECT_ID はローカルでは任意（空で可）
 ```
 
-Supabaseの認証情報の取得方法：
+2. 共有開発環境（例: develop/labio-dev）を使う場合
 
-| 項目         | 環境変数                        | 取得場所                                                |
-| ------------ | ------------------------------- | ------------------------------------------------------- |
-| Project URL  | `NEXT_PUBLIC_SUPABASE_URL`      | Dashboard > Settings > API > Project URL                |
-| anon public  | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Dashboard > Settings > API > Project API keys           |
-| service_role | `SUPABASE_SERVICE_ROLE_KEY`     | Dashboard > Settings > API > Project API keys（⚠️秘密） |
-| Reference ID | `SUPABASE_PROJECT_ID`           | Dashboard > Settings > General                          |
+```bash
+cp env.develop.example .env.develop
+```
+
+`.env.develop` にリモートの URL / anon / service_role / project_id を入れておく。使うときだけ下記コマンドで切替。
+
+3. 環境切替（Make でワンコマンド）
+
+- `make env-use-develop` : `.env.local` を退避し、`.env.develop` を `.env.local` に適用
+- `make env-restore-local`: 退避しておいた `.env.local.backup` を戻す
+
+#### DB接続ポリシー
+
+- デフォルト: `.env.local` でローカルSupabase（127.0.0.1:54321）を使う
+- 共有開発環境（develop/labio-devなど）: `.env.develop` を用意し、必要時のみ `make env-use-develop` で一時切替。終わったら `make env-restore-local` で戻す
+- ローカルSupabaseの起動/停止: `make supabase-start` / `make supabase-stop`
+- ブランチと接続先: `develop` は `labio-dev` に接続、`main` は `labio-prod` に接続（本番）
 
 ### 3. Makeコマンドの設定（Preztoユーザー向け）
 
@@ -78,7 +100,22 @@ source ~/.zshrc
 
 > **Note**: Preztoを使用していない場合、この手順は不要です。
 
-### 4. 起動
+### 4. ローカルSupabaseと起動
+
+ローカルDBを最新化してから起動するフロー（推奨）:
+
+```bash
+make supabase-start   # ローカルSupabase起動（Docker内でsupabase CLI使用）
+make supabase-reset   # repoのマイグレを全部適用してローカルDBを初期化
+make up               # Next.js開発サーバー起動
+```
+
+終了時:
+
+```bash
+make supabase-stop
+make down
+```
 
 ```bash
 make up
@@ -90,7 +127,7 @@ make up
 
 ## 開発コマンド
 
-すべてのコマンドはDockerコンテナ内で実行されます。
+すべてのコマンドはDockerコンテナ内で実行されます（ホストにCLI不要）。
 
 ### 基本操作
 
@@ -119,6 +156,16 @@ make db-types     # Supabase型定義を生成
 ```
 
 すべてのコマンドは `make help` で確認できます。
+
+## 開発フロー（ブランチ〜デプロイ）
+
+1. ブランチを切る: `develop` から `feature/aa_bb`（タスク名をスネークケース）を作成
+2. UI実装は Figma / 既存ページを参照し、コード上で0から新デザインを作らない
+3. DB変更はマイグレーションファイルを直接作成（`npx supabase migration new`）。MCP（`mcp_supabase_local_pg_query`）は読み取り専用で使用。pre-commitで型生成・DROP/TRUNCATEチェック・マイグレ有無チェックが走る
+4. テスト・Lint等を実行（必要に応じて `make test` など）
+5. PR作成 → CodeRabbitレビュー → 指摘対応
+6. develop へマージすると labio-dev でマイグレ適用（CI）、develop環境で動作確認したい場合は `make env-use-develop` で `.env.local` を切替えてテスト
+7. main へマージすると labio-prod に紐づき、本番用環境変数は GitHub Secrets から注入され Vercel に自動デプロイ
 
 ### 依存関係の追加
 
@@ -153,6 +200,7 @@ MCPサーバーは`.env.local`から環境変数を自動的に読み込みま�
 1. [Supabase Dashboard > Account > Access Tokens](https://supabase.com/dashboard/account/tokens)
 2. 「Generate new token」をクリック
 3. **`.env.local`に追加**:
+
 ```bash
 # .env.local に追加
 SUPABASE_ACCESS_TOKEN=your-supabase-access-token
@@ -176,12 +224,14 @@ SUPABASE_ACCESS_TOKEN=your-supabase-access-token
    - トークンをコピー（**一度しか表示されません**）
 
 3. **`.env.local`に追加**:
+
 ```bash
 # .env.local に追加
 FIGMA_ACCESS_TOKEN=your-figma-access-token
 ```
 
 > **💰 課金について**:
+>
 > - **デザイナー**: Figmaの有料プラン（Professional/Organization/Enterpriseプランのフルシート）が必要です
 > - **開発者**: 以下のいずれかの方法でMCPを使用できます
 >   - **方法1: 各自で有料プランを契約**（推奨）
@@ -191,8 +241,9 @@ FIGMA_ACCESS_TOKEN=your-figma-access-token
 >     - デザイナーがトークンを共有する場合、開発者は無料プランでもMCPを使用可能
 >     - **⚠️ 注意**: Personal Access Tokenは個人のアカウントに紐づいており、共有するとその人のアカウントでFigmaにアクセスできてしまいます
 >     - チーム内で信頼できる場合のみ使用を検討してください
-> 
-> **⚠️ 重要**: 
+>
+> **⚠️ 重要**:
+>
 > - Personal Access Tokenは**個人のアカウントに紐づいています**
 > - トークンを共有すると、その人のアカウントでFigmaにアクセスできてしまいます
 > - **推奨**: 各自でPersonal Access Tokenを取得し、共有しないこと
@@ -202,29 +253,23 @@ FIGMA_ACCESS_TOKEN=your-figma-access-token
 ### 2. Cursorの設定
 
 1. **`.cursor/mcp.json` を作成**：
+
    ```bash
    cp .cursor/mcp.json.example .cursor/mcp.json
    ```
-   
+
    `.cursor/mcp.json` は`.cursor/load-env.sh`を使用して`.env.local`から環境変数を読み込みます：
+
    ```json
    {
      "mcpServers": {
        "supabase": {
          "command": ".cursor/load-env.sh",
-         "args": [
-           "npx",
-           "-y",
-           "@supabase/mcp-server-supabase@latest"
-         ]
+         "args": ["npx", "-y", "@supabase/mcp-server-supabase@latest"]
        },
        "figma": {
          "command": ".cursor/load-env.sh",
-         "args": [
-           "npx",
-           "-y",
-           "@modelcontextprotocol/server-figma@latest"
-         ]
+         "args": ["npx", "-y", "@modelcontextprotocol/server-figma@latest"]
        }
      }
    }
@@ -234,7 +279,8 @@ FIGMA_ACCESS_TOKEN=your-figma-access-token
 
 3. **Cursorを再起動**
 
-> **⚠️ 重要**: 
+> **⚠️ 重要**:
+>
 > - `.cursor/mcp.json` には**直接トークンを書き込まないでください**
 > - `.cursor/load-env.sh`が`.env.local`から自動的に環境変数を読み込みます
 > - `.env.local`は`.gitignore`に含まれているため、各自の環境で設定してください
@@ -260,10 +306,10 @@ Cursorで以下を入力して、MCPが動作するか確認：
 ### 4. 使用例
 
 ```
-# Supabase操作
-「labioプロジェクトのテーブル一覧を見せて」
+# Supabase操作（読み取り専用）
 「activitiesテーブルの構造を教えて」
-「新しいマイグレーションを適用して」
+「テーブル一覧を見せて」
+「カラムの型を確認して」
 
 # Figma操作
 「このFigmaのデザインをReactコンポーネントにして」

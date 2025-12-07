@@ -39,8 +39,12 @@ export function useActivities(projectId: string | undefined) {
     const supabase = createClient();
 
     try {
-      const updateData: { status: ActivityStatus; completed_at?: string | null; started_at?: string | null } = { status };
-      
+      const updateData: {
+        status: ActivityStatus;
+        completed_at?: string | null;
+        started_at?: string | null;
+      } = { status };
+
       if (status === 'done') {
         updateData.completed_at = new Date().toISOString();
       } else if (status === 'in_progress' || status === 'in_review') {
@@ -69,41 +73,44 @@ export function useActivities(projectId: string | undefined) {
     }
   }, []);
 
-  const createActivity = useCallback(async (data: {
-    lab_id: string;
-    project_id: string;
-    title: string;
-    type?: Activity['type'];
-    status?: ActivityStatus;
-    due_date?: string;
-    created_by: string;
-  }) => {
-    const supabase = createClient();
+  const createActivity = useCallback(
+    async (data: {
+      lab_id: string;
+      project_id: string;
+      title: string;
+      type?: Activity['type'];
+      status?: ActivityStatus;
+      due_date?: string;
+      created_by: string;
+    }) => {
+      const supabase = createClient();
 
-    try {
-      // 最大positionを取得
-      const maxPosition = activities.length > 0
-        ? Math.max(...activities.map((a) => a.position))
-        : 0;
+      try {
+        // 最大positionを取得
+        const maxPosition =
+          activities.length > 0 ? Math.max(...activities.map((a) => a.position)) : 0;
 
-      const { data: newActivity, error: createError } = await supabase
-        .from('activities')
-        .insert({
-          ...data,
-          position: maxPosition + 1,
-        })
-        .select()
-        .single();
+        const { data: newActivity, error: createError } = await supabase
+          .from('activities')
+          .insert({
+            ...data,
+            position: maxPosition + 1,
+            sequence_number: 0, // トリガーで自動設定されるため、一時的な値
+          })
+          .select()
+          .single();
 
-      if (createError) throw createError;
+        if (createError) throw createError;
 
-      setActivities((prev) => [...prev, newActivity]);
-      return newActivity;
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error('Failed to create activity'));
-      throw err;
-    }
-  }, [activities]);
+        setActivities((prev) => [...prev, newActivity]);
+        return newActivity;
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error('Failed to create activity'));
+        throw err;
+      }
+    },
+    [activities]
+  );
 
   return {
     activities,
@@ -114,4 +121,3 @@ export function useActivities(projectId: string | undefined) {
     refetch: fetchActivities,
   };
 }
-

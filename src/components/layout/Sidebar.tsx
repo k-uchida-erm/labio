@@ -2,15 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import {
-  User,
-  ChevronDown,
-  PanelLeft,
-  Box,
-  Inbox,
-  Menu,
-  UserCircle,
-} from 'lucide-react';
+import { User, ChevronDown, PanelLeft, Box, Inbox, Menu, UserCircle } from 'lucide-react';
 
 export type Project = {
   id: string;
@@ -47,7 +39,7 @@ export function Sidebar({
   return (
     <aside className="flex h-full w-60 shrink-0 flex-col gap-1 overflow-hidden border-r border-slate-200 bg-slate-50 px-3 py-2">
       {/* Header */}
-      <div className="flex h-10 items-center justify-between overflow-hidden py-2 pl-2 pr-4">
+      <div className="flex h-10 items-center justify-between overflow-hidden py-2 pr-4 pl-2">
         <div className="flex items-center gap-2">
           <User size={20} className="text-slate-700" />
           <span className="text-sm font-normal text-black">{labName}</span>

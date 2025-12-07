@@ -1,0 +1,63 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy-migrations:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Apply migrations to production
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_ID_PROD: ${{ secrets.SUPABASE_PROJECT_ID_PROD }}
+        run: |
+          # 本番環境にマイグレーションを適用
+          # 注意: supabase/migrations/ にマイグレーションファイルが必要
+          if [ -d "supabase/migrations" ] && [ "$(ls -A supabase/migrations)" ]; then
+            # 本番環境にリンク
+            npx supabase link --project-ref "$SUPABASE_PROJECT_ID_PROD" || true
+            
+            # リモートのマイグレーション履歴を修復（リセット後の初期状態にする）
+            # リモートのDBがリセットされている場合、古いマイグレーション履歴をreverted状態に修復
+            echo "🔄 リモートのマイグレーション履歴を修復中..."
+            npx supabase migration repair --status reverted 20251205111107 20251205112914 20251205113749 2>&1 || echo "⚠️  履歴修復をスキップ（既に修復済みまたは履歴が存在しない可能性）"
+            
+            # マイグレーションを適用
+            # --include-all フラグで、リモートに存在しないマイグレーションも強制適用
+            echo "🔄 マイグレーションを適用中..."
+            npx supabase db push --include-all
+          else
+            echo "⚠️ マイグレーションファイルが見つかりません。スキップします。"
+          fi
+
+      - name: Generate TypeScript types from production
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_ID_PROD: ${{ secrets.SUPABASE_PROJECT_ID_PROD }}
+        run: |
+          # 本番環境から型定義を生成
+          npx supabase gen types typescript --project-id "$SUPABASE_PROJECT_ID_PROD" > src/types/database.types.ts
+
+      - name: Commit type definitions
+        if: success()
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add src/types/database.types.ts
+          git diff --staged --quiet || git commit -m "chore: update database types from production [skip ci]"
+          git push || echo "No changes to commit"
