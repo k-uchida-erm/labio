@@ -238,8 +238,13 @@ echo "$STAGED_MIGRATIONS" | while IFS= read -r migration_file; do
     # SQLの内容をcodeブロックとして追加（要約の後に追加）
     if [ -n "$sql_content" ]; then
       # SQLの内容をエスケープ（JSON用）
-      # 改行を\nに変換し、バックスラッシュとダブルクォートをエスケープ
-      sql_escaped=$(printf "%s" "$sql_content" | sed 's/\\/\\\\/g' | sed 's/"/\\"/g' | sed ':a;N;$!ba;s/\n/\\n/g')
+      # 一時ファイルを使って改行を\nに変換（macOSのsed互換性のため）
+      sql_temp=$(mktemp) || exit 1
+      printf "%s" "$sql_content" > "$sql_temp"
+      
+      # バックスラッシュとダブルクォートをエスケープし、改行を\nに変換
+      sql_escaped=$(cat "$sql_temp" | sed 's/\\/\\\\/g' | sed 's/"/\\"/g' | awk '{printf "%s\\n", $0}' | sed 's/\\n$//')
+      rm -f "$sql_temp"
       
       # codeブロックを作成（language: sqlを指定）
       if [ -z "$children_blocks" ]; then
