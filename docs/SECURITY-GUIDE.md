@@ -141,12 +141,12 @@ INSERT INTO public.labs (name, slug) VALUES
 
 ### 機密情報の管理場所
 
-| 情報の種類 | 管理場所 | Git管理 |
-| ---------- | -------- | ------- |
-| **APIキー・トークン** | `.env.local`（ローカル）<br>GitHub Secrets（CI/CD）<br>Vercel Environment Variables（本番） | ❌ 除外 |
-| **データベース接続情報** | `.env.local`（ローカル）<br>GitHub Secrets（CI/CD） | ❌ 除外 |
-| **スキーマ定義** | `supabase/migrations/*.sql` | ✅ 管理 |
-| **テストデータ** | `supabase/seed.sql`（ローカルのみ） | ✅ 管理 |
+| 情報の種類               | 管理場所                                                                                    | Git管理 |
+| ------------------------ | ------------------------------------------------------------------------------------------- | ------- |
+| **APIキー・トークン**    | `.env.local`（ローカル）<br>GitHub Secrets（CI/CD）<br>Vercel Environment Variables（本番） | ❌ 除外 |
+| **データベース接続情報** | `.env.local`（ローカル）<br>GitHub Secrets（CI/CD）                                         | ❌ 除外 |
+| **スキーマ定義**         | `supabase/migrations/*.sql`                                                                 | ✅ 管理 |
+| **テストデータ**         | `supabase/seed.sql`（ローカルのみ）                                                         | ✅ 管理 |
 
 ### `.gitignore`で除外されているもの
 
@@ -220,4 +220,3 @@ git push origin --force --all
 - [OWASP Top 10](https://owasp.org/www-project-top-ten/) - セキュリティのベストプラクティス
 - [GitHub Security Best Practices](https://docs.github.com/en/code-security/guides/best-practices-for-using-secrets-in-github-actions)
 - [Supabase Security Guide](https://supabase.com/docs/guides/platform/security)
-

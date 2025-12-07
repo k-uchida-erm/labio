@@ -11,11 +11,7 @@
     },
     "figma": {
       "command": ".cursor/load-env.sh",
-      "args": [
-        "npx",
-        "-y",
-        "@modelcontextprotocol/server-figma@latest"
-      ]
+      "args": ["npx", "-y", "@modelcontextprotocol/server-figma@latest"]
     }
   }
 }
