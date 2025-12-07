@@ -1,4 +1,4 @@
-.PHONY: help up down build rebuild logs shell clean install dev lint format test typecheck lint-fix format-check test-e2e db-types setup-hooks supabase-start supabase-stop supabase-sync supabase-reset env-use-develop env-restore-local
+.PHONY: help up down build rebuild logs shell clean install dev lint format test typecheck lint-fix format-check test-e2e db-types setup-hooks supabase-start supabase-stop supabase-sync supabase-reset supabase-migrate env-use-develop env-restore-local
 # デフォルトターゲット
 help:
 	@echo "Labio 開発コマンド"
@@ -24,10 +24,11 @@ help:
 	@echo "  make setup-hooks - Gitフックをセットアップ"
 	@echo ""
 	@echo "DB同期:"
-	@echo "  make supabase-start    - ローカルSupabaseを起動"
-	@echo "  make supabase-stop     - ローカルSupabaseを停止"
-	@echo "  make supabase-sync     - リモート（labio-dev）から最新マイグレーションを取得してローカルDBを再構築"
-	@echo "  make supabase-reset    - ローカルのマイグレーションファイルのみでローカルDBを再構築（リモート同期なし）"
+	@echo "  make supabase-start     - ローカルSupabaseを起動"
+	@echo "  make supabase-stop      - ローカルSupabaseを停止"
+	@echo "  make supabase-sync      - リモート（labio-dev）から最新マイグレーションを取得してローカルDBを再構築"
+	@echo "  make supabase-reset     - ローカルのマイグレーションファイルのみでローカルDBを再構築（リモート同期なし）"
+	@echo "  make supabase-migrate   - 新しいマイグレーションファイルのみをローカルDBに適用（既存データは保持）"
 	@echo ""
 	@echo "環境切替:"
 	@echo "  make env-use-develop   - .env.develop を .env.local に適用（既存は .env.local.backup に退避）"
@@ -154,6 +155,14 @@ supabase-reset: supabase-start
 	@echo "✅ ローカルDBをリセットしました（ローカルのマイグレーションファイルを適用）"
 	@echo "⚠️  注意: リモートに既に適用されているマイグレーションがローカルにない場合、履歴の不一致が発生します"
 	@echo "   リモートの最新状態に同期するには、make supabase-sync を使用してください"
+
+# 新しいマイグレーションファイルのみをローカルDBに適用（既存データは保持）
+# 注意: ローカルSupabaseは起動している必要があります
+# 未適用のマイグレーションのみを適用します（既存データは保持されます）
+supabase-migrate: supabase-start
+	@echo "🔄 新しいマイグレーションをローカルDBに適用中..."
+	npx supabase migration up
+	@echo "✅ マイグレーションを適用しました（既存データは保持されています）"
 
 # Gitフックをセットアップ
 # Dockerコンテナ内で実行する場合: make setup-hooks
