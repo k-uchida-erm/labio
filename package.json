@@ -15,7 +15,8 @@
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",
     "test:e2e": "playwright test",
-    "db:generate-types": ".cursor/load-env.sh sh -c 'npx supabase gen types typescript --project-id ucsurbtmhabygssexisq > src/types/database.types.ts'",
+    "db:generate-types": "sh -c 'npx supabase gen types typescript --project-id ucsurbtmhabygssexisq > src/types/database.types.ts'",
+    "db:generate-types:local": ".cursor/load-env.sh sh -c 'npx supabase gen types typescript --project-id ucsurbtmhabygssexisq > src/types/database.types.ts'",
     "setup:hooks": "git config core.hooksPath .githooks"
   },
   "dependencies": {

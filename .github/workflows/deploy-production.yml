@@ -29,8 +29,10 @@ jobs:
           # 本番環境にマイグレーションを適用
           # 注意: supabase/migrations/ にマイグレーションファイルが必要
           if [ -d "supabase/migrations" ] && [ "$(ls -A supabase/migrations)" ]; then
+            # Supabase CLIに認証情報を設定
+            echo "$SUPABASE_ACCESS_TOKEN" | npx supabase login --token -
             # 本番環境にリンク
-            npx supabase link --project-ref $SUPABASE_PROJECT_ID_PROD
+            npx supabase link --project-ref "$SUPABASE_PROJECT_ID_PROD"
             # マイグレーションを適用
             npx supabase db push
           else
@@ -43,7 +45,7 @@ jobs:
           SUPABASE_PROJECT_ID_PROD: ${{ secrets.SUPABASE_PROJECT_ID_PROD }}
         run: |
           # 本番環境から型定義を生成
-          npx supabase gen types typescript --project-id $SUPABASE_PROJECT_ID_PROD > src/types/database.types.ts
+          npx supabase gen types typescript --project-id "$SUPABASE_PROJECT_ID_PROD" > src/types/database.types.ts
 
       - name: Commit type definitions
         if: success()

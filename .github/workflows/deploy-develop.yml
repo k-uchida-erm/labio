@@ -30,7 +30,11 @@ jobs:
           SUPABASE_ACCESS_TOKEN: ${{ env.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_PROJECT_ID_DEV: ${{ env.SUPABASE_PROJECT_ID_DEV }}
         run: |
+          # Supabase CLIに認証情報を設定
+          echo "$SUPABASE_ACCESS_TOKEN" | npx supabase login --token -
+          # プロジェクトにリンク
           npx supabase link --project-ref "$SUPABASE_PROJECT_ID_DEV"
+          # マイグレーションを適用
           npx supabase db push
 
       - name: Generate TypeScript types from labio-dev

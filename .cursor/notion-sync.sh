@@ -53,7 +53,7 @@ echo "$STAGED_MIGRATIONS" | while IFS= read -r migration_file; do
     # CREATE TABLEを検出
     create_tables=$(grep -iE "^\s*create\s+table" "$migration_file" | sed -E 's/.*"public"\."([^"]+)".*/\1/' | sort -u | tr '\n' ',' | sed 's/,$//')
     if [ -n "$create_tables" ]; then
-      summary="${summary}📊 **テーブル作成**: ${create_tables}\n\n"
+      summary+=$'📊 **テーブル作成**: '"${create_tables}"$'\n\n'
     fi
     
     # ALTER TABLEを検出（テーブル名と操作を抽出）
@@ -110,7 +110,7 @@ echo "$STAGED_MIGRATIONS" | while IFS= read -r migration_file; do
     
     if [ -n "$alter_info" ]; then
       alter_info=$(echo "$alter_info" | sed 's/, $//')
-      summary="${summary}🔧 **テーブル変更**: ${alter_info}\n\n"
+      summary+=$'🔧 **テーブル変更**: '"${alter_info}"$'\n\n'
     fi
     
     # CREATE INDEXを検出
@@ -118,28 +118,28 @@ echo "$STAGED_MIGRATIONS" | while IFS= read -r migration_file; do
     create_indexes=$(grep -iE "^\s*create\s+(unique\s+)?index" "$migration_file" | sed -E 's/.*create\s+(unique\s+)?index\s+"?([^"\s(]+)"?.*/\2/i' | sort -u | head -10 | tr '\n' ',' | sed 's/,$//')
     if [ -n "$create_indexes" ] && [ "$create_indexes" != "create" ] && [ "$create_indexes" != "index" ] && [ "$create_indexes" != "unique" ]; then
       if [ "$index_count" -gt 10 ]; then
-        summary="${summary}📇 **インデックス作成**: ${create_indexes}... (他$((index_count - 10))件)\n\n"
+        summary+=$'📇 **インデックス作成**: '"${create_indexes}... (他$((index_count - 10))件)"$'\n\n'
       else
-        summary="${summary}📇 **インデックス作成**: ${create_indexes}\n\n"
+        summary+=$'📇 **インデックス作成**: '"${create_indexes}"$'\n\n'
       fi
     fi
     
     # CREATE FUNCTIONを検出
     create_functions=$(grep -iE "^\s*create\s+(or\s+replace\s+)?function" "$migration_file" | sed -E 's/.*"public"\."([^"]+)".*/\1/' | sort -u | tr '\n' ',' | sed 's/,$//')
     if [ -n "$create_functions" ]; then
-      summary="${summary}⚙️ **関数作成**: ${create_functions}\n\n"
+      summary+=$'⚙️ **関数作成**: '"${create_functions}"$'\n\n'
     fi
     
     # CREATE TRIGGERを検出
     create_triggers=$(grep -iE "^\s*create\s+trigger" "$migration_file" | sed -E 's/.*create\s+trigger\s+"?([^"\s.]+)"?.*/\1/i' | sort -u | tr '\n' ',' | sed 's/,$//')
     if [ -n "$create_triggers" ] && [ "$create_triggers" != "create" ] && [ "$create_triggers" != "trigger" ]; then
-      summary="${summary}🎯 **トリガー作成**: ${create_triggers}\n\n"
+      summary+=$'🎯 **トリガー作成**: '"${create_triggers}"$'\n\n'
     fi
     
     # DROPを検出
     drop_items=$(grep -iE "^\s*drop\s+(table|index|function|trigger)" "$migration_file" | sed -E 's/.*"public"\."([^"]+)".*/\1/' | sort -u | tr '\n' ',' | sed 's/,$//')
     if [ -n "$drop_items" ]; then
-      summary="${summary}🗑️ **削除**: ${drop_items}\n\n"
+      summary+=$'🗑️ **削除**: '"${drop_items}"$'\n\n'
     fi
     
     # 要約が空の場合はデフォルトメッセージ
