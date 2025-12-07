@@ -40,8 +40,14 @@ if [ -n "$TS_JS_FILES" ]; then
   npx eslint . --fix 2>/dev/null || true
 fi
 
-# 修正されたファイルを再度ステージング
-git add . 2>/dev/null || true
+# 修正されたファイルを再度ステージング（元々ステージングされていたファイルのみ）
+# ファイル名にスペースや改行が含まれている場合に対応するため、null区切りで処理
+if [ -n "$STAGED_FILES" ]; then
+  # 元々ステージングされていたファイルをnull区切りで取得し、再ステージング
+  # xargs -0 を使用してnull区切りのファイル名を安全に処理
+  # 注意: -r オプションはGNU拡張のため、ifチェックで既に空チェック済み
+  git diff --cached --name-only -z | xargs -0 git add 2>/dev/null || true
+fi
 
 echo "✅ 自動フォーマット・Lint修正が完了しました"
 
