@@ -49,8 +49,11 @@ jobs:
         run: |
           npx supabase gen types typescript --project-id "$SUPABASE_PROJECT_ID_DEV" > src/types/database.types.ts
 
-      - name: Upload generated types
-        uses: actions/upload-artifact@v4
-        with:
-          name: database-types-dev
-          path: src/types/database.types.ts
+      - name: Commit type definitions
+        if: success()
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add src/types/database.types.ts
+          git diff --staged --quiet || git commit -m "chore: update database types from labio-dev [skip ci]"
+          git push || echo "No changes to commit"

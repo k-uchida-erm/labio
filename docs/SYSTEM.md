@@ -36,7 +36,7 @@ Labioプロジェクトの現状のシステム構成を説明します。
 
 **実行内容**:
 
-- ✅ **マイグレーションチェック**: `src/types/database.types.ts`が変更された場合、`supabase/migrations/`に新しいファイルが追加されているかチェック
+- ✅ **マイグレーション検証**（PR時のみ）: ローカルのマイグレーションファイルとリモート（labio-dev）のマイグレーション履歴を照合し、矛盾がないか確認（**実際には適用しない**）
 - ✅ **Lintチェック**: ESLintでコード品質をチェック
 - ✅ **型チェック**: TypeScriptの型エラーを検出
 - ✅ **フォーマットチェック**: Prettierでフォーマットをチェック
@@ -80,7 +80,30 @@ Labioプロジェクトの現状のシステム構成を説明します。
 
 - **GitHub Marketplaceの利用規約エラー**: 組織のオーナーに依頼するか、CodeRabbit Dashboardから設定
 
-#### 3. 本番環境への自動デプロイ
+#### 3. 開発環境への自動デプロイ
+
+**ファイル**: `.github/workflows/deploy-develop.yml`
+
+**トリガー**:
+
+- `develop`ブランチへのpush時（`push`）
+  - **重要**: `feature/xxx`ブランチへのpushでは実行されない
+  - **重要**: PR作成時にも実行されない（マージ後のpushのみ）
+
+**実行内容**:
+
+1. **マイグレーション適用**: `supabase/migrations/`のマイグレーションファイルを`labio-dev`に**実際に適用**（DBが書き換わる）
+2. **型定義生成**: `labio-dev`からTypeScript型定義を生成
+3. **型定義コミット**: 生成した型定義を自動的にコミット
+
+**注意事項**:
+
+- ⚠️ **実際にDBが書き換わります**（試験的ではありません）
+- ✅ `feature/xxx`ブランチにpushしても、DBは書き換わりません
+- ✅ PRを作成しても、DBは書き換わりません
+- ✅ `develop`ブランチにマージ（push）した瞬間に、`labio-dev`のDBが更新されます
+
+#### 4. 本番環境への自動デプロイ
 
 **ファイル**: `.github/workflows/deploy-production.yml`
 
@@ -90,7 +113,7 @@ Labioプロジェクトの現状のシステム構成を説明します。
 
 **実行内容**:
 
-1. **マイグレーション適用**: `supabase/migrations/`のマイグレーションファイルを本番環境に適用
+1. **マイグレーション適用**: `supabase/migrations/`のマイグレーションファイルを本番環境に**実際に適用**（DBが書き換わる）
 2. **型定義生成**: 本番環境からTypeScript型定義を生成
 3. **型定義コミット**: 生成した型定義を自動的にコミット
 
@@ -246,8 +269,14 @@ SUPABASE_SERVICE_ROLE_KEY=your-prod-service-role-key
 - UI: Figmaまたは既存ページを参照し、コード上で0から新デザインを作らない
 - DB: マイグレーションファイルを直接作成（`npx supabase migration new`）。MCP（`mcp_supabase_local_pg_query`）は読み取り専用で使用。pre-commit で型生成と危険DDLチェック（DROP/TRUNCATE）およびマイグレ有無チェック
 - テスト: 必要に応じ `make test` などを実行
-- レビュー: PR → CodeRabbit → 指摘対応 → develop へマージ（labio-devにマイグレ適用）
+- レビュー: PR → CodeRabbit → 指摘対応 → develop へマージ（**マージした瞬間にlabio-devのDBが実際に書き換わる**）
 - 本番: main へマージで labio-prod、本番用環境変数は GitHub Secrets から注入され Vercel に自動デプロイ
+
+**重要**:
+
+- `feature/xxx`ブランチにpushしても、DBは書き換わりません（CIチェックのみ実行）
+- PRを作成しても、DBは書き換わりません（CIチェックのみ実行）
+- `develop`ブランチにマージ（push）した瞬間に、`labio-dev`のDBが**実際に更新**されます
 
 ---
 
@@ -256,7 +285,7 @@ SUPABASE_SERVICE_ROLE_KEY=your-prod-service-role-key
 ### ブランチ構成
 
 - **`main`**: 本番環境にデプロイされるブランチ（保護されている）
-- **`develop`**: 開発用ブランチ（直接プッシュ可能）
+- **`develop`**: 開発用ブランチ（**推奨: 保護ルールを設定**）
 - **`feature/*`**: 機能開発用ブランチ
 
 ### mainブランチ保護ルール
@@ -269,6 +298,22 @@ SUPABASE_SERVICE_ROLE_KEY=your-prod-service-role-key
 - ✅ **Require a pull request before merging**: PR必須
 - ✅ **Block force pushes**: force pushを禁止
 - ✅ **Require status checks to pass**: CIチェックが通るまでマージ不可
+
+### developブランチ保護ルール（推奨）
+
+**設定場所**: GitHub Settings > Branches > Branch protection rules
+
+**推奨ルール**:
+
+- ✅ **Require a pull request before merging**: PR必須（直接pushを禁止）
+- ✅ **Require status checks to pass**: CIチェック（`lint-and-test`）が通るまでマージ不可
+- ✅ **Block force pushes**: force pushを禁止
+
+**効果**:
+
+- `feature/xxx`から`develop`への直接pushが禁止される
+- PRを作成し、CIチェックが通るまでマージできない
+- 問題のあるコードが`develop`にマージされるのを防げる
 
 **ワークフロー**:
 

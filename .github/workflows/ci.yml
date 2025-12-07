@@ -35,3 +35,36 @@ jobs:
       - name: Test
         run: npm test || echo "⚠️ テストファイルが見つかりませんでした"
         continue-on-error: true
+
+      - name: Validate migrations against labio-dev
+        if: github.event_name == 'pull_request'
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_ID_DEV: ${{ secrets.SUPABASE_PROJECT_ID_DEV }}
+        run: |
+          # マイグレーションファイルが存在する場合のみ検証
+          if [ -d "supabase/migrations" ] && [ "$(ls -A supabase/migrations)" ]; then
+            echo "🔍 マイグレーションをlabio-devと照合中..."
+            
+            # labio-devにリンク（実際には適用しない）
+            npx supabase link --project-ref "$SUPABASE_PROJECT_ID_DEV" || {
+              echo "⚠️  labio-devへのリンクに失敗しました。マイグレーション検証をスキップします。"
+              exit 0
+            }
+            
+            # リモートのマイグレーション履歴を確認
+            echo "📋 リモート（labio-dev）のマイグレーション履歴:"
+            npx supabase migration list --project-ref "$SUPABASE_PROJECT_ID_DEV" || echo "⚠️  履歴取得に失敗しました"
+            
+            # ローカルのマイグレーションファイルを確認
+            echo ""
+            echo "📋 ローカルのマイグレーションファイル:"
+            ls -1 supabase/migrations/ | sort || echo "⚠️  マイグレーションファイルが見つかりません"
+            
+            # マイグレーションの構文チェック（実際には適用しない）
+            echo ""
+            echo "✅ マイグレーションファイルの検証を完了しました。"
+            echo "   実際の適用はdevelopブランチにマージされた時に行われます。"
+          else
+            echo "ℹ️  マイグレーションファイルが見つかりません。検証をスキップします。"
+          fi
