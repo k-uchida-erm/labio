@@ -29,9 +29,7 @@ jobs:
           # 本番環境にマイグレーションを適用
           # 注意: supabase/migrations/ にマイグレーションファイルが必要
           if [ -d "supabase/migrations" ] && [ "$(ls -A supabase/migrations)" ]; then
-            # Supabase CLIに認証情報を設定
-            echo "$SUPABASE_ACCESS_TOKEN" | npx supabase login --token -
-            # 本番環境にリンク
+            # 本番環境にリンク（環境変数で認証）
             npx supabase link --project-ref "$SUPABASE_PROJECT_ID_PROD"
             # マイグレーションを適用
             npx supabase db push
