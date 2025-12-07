@@ -10,9 +10,11 @@ BEFORE_UNSTAGED=$(mktemp) || exit 1
 AFTER_UNSTAGED=$(mktemp) || exit 1
 FORMATTER_CHANGED=$(mktemp) || exit 1
 TEMP_TYPES_FILE=$(mktemp) || exit 1
+TEMP_FILE=$(mktemp) || exit 1
 
 # すべての一時ファイルをクリーンアップするtrapを設定
-trap "rm -f '$BEFORE_UNSTAGED' '$AFTER_UNSTAGED' '$FORMATTER_CHANGED' '$TEMP_TYPES_FILE'" EXIT
+# NOTE: シングルクォート内で変数展開させることで、後から定義される変数もまとめてクリーンアップできる
+trap 'rm -f "$BEFORE_UNSTAGED" "$AFTER_UNSTAGED" "$FORMATTER_CHANGED" "$TEMP_TYPES_FILE" "$TEMP_FILE"' EXIT
 
 git diff --name-only --diff-filter=ACMR > "$BEFORE_UNSTAGED" 2>/dev/null || true
 
@@ -113,8 +115,7 @@ if [ -n "$MIGRATION_FILES" ]; then
   DANGEROUS_PATTERN='(^|[[:space:]])(DROP[[:space:]]+(TABLE|VIEW|INDEX|SEQUENCE|FUNCTION|TRIGGER|COLUMN|CONSTRAINT)|TRUNCATE[[:space:]]+TABLE)'
   
   # パイプを使わず、一時ファイルでサブシェル問題を回避
-  TEMP_FILE=$(mktemp) || exit 1
-  trap "rm -f '$TEMP_FILE'" EXIT
+  # NOTE: TEMP_FILEは既に最初に定義されているため、ここでは再定義しない
 
   echo "$MIGRATION_FILES" | while IFS= read -r file; do
     if [ -n "$file" ]; then
