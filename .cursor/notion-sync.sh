@@ -6,8 +6,11 @@
 # set +a: 自動エクスポートを無効化
 if [ -f .env.local ]; then
   set -a
-  # コメント行と空行を除外して読み込み
-  source <(grep -v '^#' .env.local | grep -v '^$')
+  # コメント行と空行を除外して読み込み（一時ファイルを使用）
+  TEMP_ENV=$(mktemp) || exit 1
+  grep -v '^#' .env.local | grep -v '^$' > "$TEMP_ENV"
+  source "$TEMP_ENV"
+  rm -f "$TEMP_ENV"
   set +a
 fi
 
@@ -146,8 +149,18 @@ echo "$STAGED_MIGRATIONS" | while IFS= read -r migration_file; do
     if [ -z "$summary" ]; then
       summary="📝 マイグレーションファイルが追加されました。\n"
     fi
+    
+    # SQLの内容を読み込む（後でコードブロックとして追加）
+    sql_content=""
+    if [ -f "$migration_file" ]; then
+      sql_content=$(cat "$migration_file")
+    fi
   else
     summary="📝 マイグレーションファイルが追加されました。\n"
+    sql_content=""
+    if [ -f "$migration_file" ]; then
+      sql_content=$(cat "$migration_file")
+    fi
   fi
   
   # childrenブロックを構築（\n\nで分割して各段落を別のparagraphブロックにし、Markdown記法を変換）
@@ -221,6 +234,25 @@ echo "$STAGED_MIGRATIONS" | while IFS= read -r migration_file; do
     done < "$temp_file"
     
     rm -f "$temp_file"
+    
+    # SQLの内容をcodeブロックとして追加（要約の後に追加）
+    if [ -n "$sql_content" ]; then
+      # SQLの内容をエスケープ（JSON用）
+      # 一時ファイルを使って改行を\nに変換（macOSのsed互換性のため）
+      sql_temp=$(mktemp) || exit 1
+      printf "%s" "$sql_content" > "$sql_temp"
+      
+      # バックスラッシュとダブルクォートをエスケープし、改行を\nに変換
+      sql_escaped=$(cat "$sql_temp" | sed 's/\\/\\\\/g' | sed 's/"/\\"/g' | awk '{printf "%s\\n", $0}' | sed 's/\\n$//')
+      rm -f "$sql_temp"
+      
+      # codeブロックを作成（language: sqlを指定）
+      if [ -z "$children_blocks" ]; then
+        children_blocks="{\"object\":\"block\",\"type\":\"code\",\"code\":{\"rich_text\":[{\"type\":\"text\",\"text\":{\"content\":\"$sql_escaped\"}}],\"language\":\"sql\"}}"
+      else
+        children_blocks="$children_blocks,{\"object\":\"block\",\"type\":\"code\",\"code\":{\"rich_text\":[{\"type\":\"text\",\"text\":{\"content\":\"$sql_escaped\"}}],\"language\":\"sql\"}}"
+      fi
+    fi
     
   if [ -n "$children_blocks" ]; then
     children_block=",\"children\":[$children_blocks]"

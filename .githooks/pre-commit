@@ -1,10 +1,38 @@
 #!/bin/sh
 # Git pre-commit hook: 自動フォーマット・Lint修正・DB変更チェック
 
-# ステージングされたファイルをチェック
+# ステージングされたファイルをチェック（フォーマッタ実行前に保存）
 STAGED_FILES=$(git diff --cached --name-only)
 
-# Supabase型定義を毎回生成してステージング（フォーマット前に実行）
+# フォーマッタ実行前の未ステージング変更を記録（作業中のファイルを保護するため）
+# 一時ファイルに保存して、後で比較に使用
+BEFORE_UNSTAGED=$(mktemp) || exit 1
+AFTER_UNSTAGED=$(mktemp) || exit 1
+FORMATTER_CHANGED=$(mktemp) || exit 1
+TEMP_TYPES_FILE=$(mktemp) || exit 1
+TEMP_FILE=$(mktemp) || exit 1
+
+# すべての一時ファイルをクリーンアップするtrapを設定
+# NOTE: シングルクォート内で変数展開させることで、後から定義される変数もまとめてクリーンアップできる
+trap 'rm -f "$BEFORE_UNSTAGED" "$AFTER_UNSTAGED" "$FORMATTER_CHANGED" "$TEMP_TYPES_FILE" "$TEMP_FILE"' EXIT
+
+git diff --name-only --diff-filter=ACMR > "$BEFORE_UNSTAGED" 2>/dev/null || true
+
+# すべてのPrettier対応ファイルをフォーマット（型定義生成の前に実行）
+echo "🔧 自動フォーマット・Lint修正を実行中..."
+
+# Prettierで自動フォーマット（全ファイル）
+echo "  📝 Prettierでフォーマット中..."
+npx prettier --write . 2>/dev/null || true
+
+# TypeScript/JavaScriptファイルに対してESLintで自動修正
+TS_JS_FILES=$(echo "$STAGED_FILES" | grep -E '\.(ts|tsx|js|jsx)$' || true)
+if [ -n "$TS_JS_FILES" ]; then
+  echo "  🔍 ESLintで自動修正中..."
+  npx eslint . --fix 2>/dev/null || true
+fi
+
+# Supabase型定義を毎回生成してステージング（フォーマット後に実行）
 # 注意: 型定義はリモート（labio-dev）のスキーマと一致させる必要がある
 # ローカル開発では、ローカルSupabaseから生成（開発中の変更を反映）
 # CI/CDでは、リモートから生成してコミット（リモートの状態を反映）
@@ -13,8 +41,6 @@ if command -v npx >/dev/null 2>&1; then
   # ローカルSupabaseから型定義を生成（開発中の変更を反映）
   # 出力の最初の行「Connecting to db...」を削除
   # パイプラインの終了ステータス問題を回避するため、一時ファイルを使用
-  TEMP_TYPES_FILE=$(mktemp) || exit 1
-  trap "rm -f '$TEMP_TYPES_FILE'" EXIT
   
   if npx supabase gen types typescript --local > "$TEMP_TYPES_FILE" 2>&1; then
     # 成功した場合のみ、Connecting to db行を削除して出力
@@ -31,30 +57,50 @@ if command -v npx >/dev/null 2>&1; then
       npx supabase gen types typescript --project-id ucsurbtmhabygssexisq > src/types/database.types.ts
     fi
   fi
-  git add src/types/database.types.ts 2>/dev/null || true
+  
+  # 型定義ファイルをPrettierでフォーマット（生成後に再フォーマット）
+  if [ -f src/types/database.types.ts ]; then
+    npx prettier --write src/types/database.types.ts 2>/dev/null || true
+  fi
 fi
 
-# すべてのPrettier対応ファイルをフォーマット
-echo "🔧 自動フォーマット・Lint修正を実行中..."
+# 修正されたファイルをすべてステージング
+# Prettier/ESLint/型定義生成で変更されたファイルをすべて検出してステージング
+echo "  📦 変更されたファイルをステージング中..."
 
-# Prettierで自動フォーマット（全ファイル）
-echo "  📝 Prettierでフォーマット中..."
-npx prettier --write . 2>/dev/null || true
+# フォーマッタ実行後の未ステージング変更を取得
+git diff --name-only --diff-filter=ACMR > "$AFTER_UNSTAGED" 2>/dev/null || true
 
-# TypeScript/JavaScriptファイルに対してESLintで自動修正
-TS_JS_FILES=$(echo "$STAGED_FILES" | grep -E '\.(ts|tsx|js|jsx)$' || true)
-if [ -n "$TS_JS_FILES" ]; then
-  echo "  🔍 ESLintで自動修正中..."
-  npx eslint . --fix 2>/dev/null || true
-fi
+# フォーマッタ実行前後で比較し、新たに変更されたファイルのみを検出
+# （元々未ステージングだった作業中のファイルを保護）
+comm -13 "$BEFORE_UNSTAGED" "$AFTER_UNSTAGED" > "$FORMATTER_CHANGED" 2>/dev/null || true
 
-# 修正されたファイルを再度ステージング（元々ステージングされていたファイルのみ）
-# ファイル名にスペースや改行が含まれている場合に対応するため、null区切りで処理
+# 元々ステージングされていたファイルを再ステージング（フォーマッタで変更された可能性がある）
 if [ -n "$STAGED_FILES" ]; then
-  # 元々ステージングされていたファイルをnull区切りで取得し、再ステージング
-  # xargs -0 を使用してnull区切りのファイル名を安全に処理
-  # 注意: -r オプションはGNU拡張のため、ifチェックで既に空チェック済み
-  git diff --cached --name-only -z | xargs -0 git add 2>/dev/null || true
+  echo "$STAGED_FILES" | while IFS= read -r file; do
+    if [ -n "$file" ] && [ -f "$file" ]; then
+      git add "$file" 2>/dev/null || true
+    fi
+  done
+fi
+
+# フォーマッタ実行前には存在しなかったが、実行後に変更されたファイルをステージング
+# （型定義ファイルなど、フォーマッタで生成/変更されたファイル）
+if [ -s "$FORMATTER_CHANGED" ]; then
+  while IFS= read -r file; do
+    if [ -n "$file" ] && [ -f "$file" ]; then
+      # 元々ステージングされていたファイル、または型定義ファイルのみをステージング
+      # （作業中のファイルを保護）
+      if echo "$STAGED_FILES" | grep -Fxq "$file" || [ "$file" = "src/types/database.types.ts" ]; then
+        git add "$file" 2>/dev/null || true
+      fi
+    fi
+  done < "$FORMATTER_CHANGED"
+fi
+
+# 型定義ファイルを確実にステージング（Prettierでフォーマットされた後）
+if [ -f src/types/database.types.ts ]; then
+  git add src/types/database.types.ts 2>/dev/null && echo "✅ 型定義ファイルをステージングしました"
 fi
 
 echo "✅ 自動フォーマット・Lint修正が完了しました"
@@ -69,8 +115,7 @@ if [ -n "$MIGRATION_FILES" ]; then
   DANGEROUS_PATTERN='(^|[[:space:]])(DROP[[:space:]]+(TABLE|VIEW|INDEX|SEQUENCE|FUNCTION|TRIGGER|COLUMN|CONSTRAINT)|TRUNCATE[[:space:]]+TABLE)'
   
   # パイプを使わず、一時ファイルでサブシェル問題を回避
-  TEMP_FILE=$(mktemp) || exit 1
-  trap "rm -f '$TEMP_FILE'" EXIT
+  # NOTE: TEMP_FILEは既に最初に定義されているため、ここでは再定義しない
 
   echo "$MIGRATION_FILES" | while IFS= read -r file; do
     if [ -n "$file" ]; then
