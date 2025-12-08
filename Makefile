@@ -1,4 +1,4 @@
-.PHONY: help up down build rebuild logs shell clean install dev lint format test typecheck lint-fix format-check test-e2e db-types setup-hooks supabase-start supabase-stop supabase-sync supabase-reset supabase-migrate env-use-develop env-restore-local
+.PHONY: help up down build rebuild logs shell clean install lint format test typecheck lint-fix format-check test-e2e db-types setup-hooks supabase-start supabase-stop supabase-reset supabase-migrate supabase-check-dev supabase-pull-dev dev-prepare env-use-develop env-restore-local
 # デフォルトターゲット
 help:
 	@echo "Labio 開発コマンド"
@@ -26,9 +26,11 @@ help:
 	@echo "DB同期:"
 	@echo "  make supabase-start     - ローカルSupabaseを起動"
 	@echo "  make supabase-stop      - ローカルSupabaseを停止"
-	@echo "  make supabase-sync      - リモート（labio-dev）から最新マイグレーションを取得してローカルDBを再構築"
-	@echo "  make supabase-reset     - ローカルのマイグレーションファイルのみでローカルDBを再構築（リモート同期なし）"
+	@echo "  make supabase-reset     - ローカルのマイグレーションファイルのみでローカルDBを再構築"
 	@echo "  make supabase-migrate   - 新しいマイグレーションファイルのみをローカルDBに適用（既存データは保持）"
+	@echo "  make supabase-check-dev - labio-devに適用されているマイグレーション履歴を確認"
+	@echo "  make supabase-pull-dev  - リモート（labio-dev）からスキーマを取得してマイグレーションファイルを更新"
+	@echo "  make dev-prepare        - 開発前の準備（git pull + マイグレーション履歴確認）"
 	@echo ""
 	@echo "環境切替:"
 	@echo "  make env-use-develop   - .env.develop を .env.local に適用（既存は .env.local.backup に退避）"
@@ -97,10 +99,6 @@ format-check:
 test:
 	docker compose run --rm app npm run test
 
-# テストを実行（UIモード）
-test-ui:
-	docker compose run --rm -p 51204:51204 app npm run test:ui
-
 # E2Eテストを実行
 test-e2e:
 	docker compose run --rm app npm run test:e2e
@@ -108,10 +106,6 @@ test-e2e:
 # 型チェックを実行
 typecheck:
 	docker compose run --rm app npm run typecheck
-
-# 本番ビルド
-build-app:
-	docker compose run --rm app npm run build
 
 # =============================================================================
 # Supabase コマンド
@@ -135,26 +129,12 @@ supabase-start:
 supabase-stop:
 	npx supabase stop || true
 
-# リモート（labio-dev）から最新マイグレーションを取得してローカルDBを再構築
-# これが通常の開発フローで使用するコマンド
-# リモートのスキーマをpullして、ローカルのマイグレーションファイルを更新
-supabase-sync: supabase-start
-	@echo "🔄 リモート（labio-dev）にリンク中..."
-	@bash .cursor/load-env.sh sh -c 'npx supabase link --project-ref ucsurbtmhabygssexisq' || echo "⚠️  link failed, continuing..."
-	@echo "🔄 リモート（labio-dev）から最新スキーマを取得中..."
-	@bash .cursor/load-env.sh sh -c 'npx supabase db pull' || echo "⚠️  db pull failed, continuing..."
-	@echo "🔄 ローカルDBを最新マイグレーションで再構築中..."
-	npx supabase db reset
-	@echo "✅ ローカルDBをリモートの最新状態に同期しました"
-
-# ローカルのマイグレーションファイルのみでローカルDBを再構築（リモート同期なし）
-# リモートから取得せず、ローカルのsupabase/migrations/にあるマイグレーションのみを適用
+# ローカルのマイグレーションファイルのみでローカルDBを再構築
+# マイグレーションファイル管理の運用では、git pullで最新のマイグレーションファイルを取得してから実行
 supabase-reset: supabase-start
 	@echo "🔄 ローカルDBをローカルのマイグレーションファイルで再構築中..."
 	npx supabase db reset
 	@echo "✅ ローカルDBをリセットしました（ローカルのマイグレーションファイルを適用）"
-	@echo "⚠️  注意: リモートに既に適用されているマイグレーションがローカルにない場合、履歴の不一致が発生します"
-	@echo "   リモートの最新状態に同期するには、make supabase-sync を使用してください"
 
 # 新しいマイグレーションファイルのみをローカルDBに適用（既存データは保持）
 # 注意: ローカルSupabaseは起動している必要があります
@@ -163,6 +143,56 @@ supabase-migrate: supabase-start
 	@echo "🔄 新しいマイグレーションをローカルDBに適用中..."
 	npx supabase migration up
 	@echo "✅ マイグレーションを適用しました（既存データは保持されています）"
+
+# labio-devに適用されているマイグレーション履歴を確認
+# 環境変数: SUPABASE_ACCESS_TOKEN が必要（.env.localから自動読み込み）
+supabase-check-dev:
+	@echo "🔍 labio-devに適用されているマイグレーション履歴を確認中..."
+	@bash .cursor/load-env.sh sh -c 'npx supabase link --project-ref ucsurbtmhabygssexisq' 2>&1 | grep -v "Remote migration versions not found" || true
+	@echo ""
+	@echo "📋 リモート（labio-dev）のマイグレーション履歴:"
+	@bash .cursor/load-env.sh sh -c 'npx supabase migration list' || echo "⚠️  履歴取得に失敗しました"
+	@echo ""
+	@echo "📋 ローカルのマイグレーションファイル:"
+	@ls -1 supabase/migrations/ 2>/dev/null | sort || echo "⚠️  マイグレーションファイルが見つかりません"
+
+# リモート（labio-dev）の状態をローカルDBに直接適用（マイグレーションファイルの履歴には残さない）
+# 開発環境で雑なマイグレーションファイルを作ったり、DBを直接いじった後、リモートの状態に戻す用
+# 環境変数: SUPABASE_ACCESS_TOKEN が必要（.env.localから自動読み込み）
+supabase-pull-dev: supabase-start
+	@echo "🔄 リモート（labio-dev）にリンク中..."
+	@bash .cursor/load-env.sh sh -c 'npx supabase link --project-ref ucsurbtmhabygssexisq' 2>&1 | grep -v "Remote migration versions not found" || true
+	@echo ""
+	@echo "🔄 リモート（labio-dev）からスキーマを取得中（一時的なマイグレーションファイルを作成）..."
+	@TEMP_MIGRATION=$$(mktemp -d) && \
+	cp -r supabase/migrations $$TEMP_MIGRATION/ && \
+	bash .cursor/load-env.sh sh -c "cd $$TEMP_MIGRATION && npx supabase db pull" && \
+	echo "" && \
+	echo "🔄 ローカルDBをリセット中..." && \
+	npx supabase db reset > /dev/null 2>&1 || true && \
+	echo "" && \
+	echo "🔄 リモートのスキーマをローカルDBに適用中..." && \
+	LATEST_MIGRATION=$$(ls -t $$TEMP_MIGRATION/migrations/*.sql 2>/dev/null | head -1) && \
+	if [ -n "$$LATEST_MIGRATION" ]; then \
+		PGPASSWORD=postgres psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -f $$LATEST_MIGRATION > /dev/null 2>&1; \
+	fi && \
+	rm -rf $$TEMP_MIGRATION && \
+	echo "" && \
+	echo "✅ リモートの状態をローカルDBに適用しました" && \
+	echo "   注意: マイグレーションファイルの履歴には残りません（開発環境用）" || \
+	(rm -rf $$TEMP_MIGRATION && echo "⚠️  スキーマ適用に失敗しました")
+
+# 開発前の準備（git pull + マイグレーション履歴確認）
+# マイグレーションファイル管理の運用では、git pullで十分だが、念のため履歴を確認
+dev-prepare:
+	@echo "🔄 最新のコードを取得中..."
+	@git pull || echo "⚠️  git pullに失敗しました"
+	@echo ""
+	@echo "🔍 マイグレーション履歴を確認中..."
+	@$(MAKE) supabase-check-dev || echo "⚠️  マイグレーション履歴の確認に失敗しました（環境変数が設定されていない可能性があります）"
+	@echo ""
+	@echo "✅ 開発準備が完了しました"
+	@echo "   ローカルDBを最新状態にするには: make supabase-reset"
 
 # Gitフックをセットアップ
 # Dockerコンテナ内で実行する場合: make setup-hooks
