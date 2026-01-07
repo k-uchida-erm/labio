@@ -1,23 +1,20 @@
 'use client';
 
 import * as React from 'react';
-import { CaretRight, Cube } from 'phosphor-react';
+import { CaretRight, Cube, Flask, Question, ClipboardText, UsersThree, Note } from 'phosphor-react';
 import { ActivityCheckbox } from './ActivityCheckbox';
 import { ActivityAddButton } from './ActivityAddButton';
 import StatusMenu from './StatusMenu';
 import DueDateMenu from './DueDateMenu';
 import { Badge } from '@/components/ui/badge';
 import { AvatarInitial } from '@/components/ui/avatar';
-import { ActivityMetadata, ActivityType } from '@/features/activity/types';
-
-export type ActivityStatus = 'todo' | 'in_progress' | 'done';
+import { ActivityStatus, ActivityType } from '@/features/activity/types';
 
 export type ActivityItemProps = {
   id: string;
   title: string;
   type?: ActivityType;
   dueDate?: string;
-  metadata?: ActivityMetadata;
   status?: ActivityStatus;
   assigneeName?: string | null;
   assigneeAvatarUrl?: string | null;
@@ -38,13 +35,21 @@ export type ActivityItemProps = {
   completedSubtasks?: number;
 };
 
+const typeIcons: Record<ActivityType, React.ReactElement> = {
+  task: <Cube className="h-4 w-4 text-black" weight="light" />,
+  experiment: <Flask className="h-4 w-4 text-black" weight="light" />,
+  question: <Question className="h-4 w-4 text-black" weight="light" />,
+  review: <ClipboardText className="h-4 w-4 text-black" weight="light" />,
+  meeting: <UsersThree className="h-4 w-4 text-black" weight="light" />,
+  note: <Note className="h-4 w-4 text-black" weight="light" />,
+};
+
 export function ActivityItem({
   id,
   title,
   type = 'task',
   dueDate,
   status = 'todo',
-  metadata,
   assigneeName,
   assigneeAvatarUrl,
   hasChildren,
@@ -106,9 +111,9 @@ export function ActivityItem({
         </div>
       )}
 
-      {/* Type cell (Task) */}
+      {/* Type cell */}
       <div className="flex h-10 w-10 items-center justify-center">
-        <Cube className="h-4 w-4 text-black" weight="light" />
+        {typeIcons[type] ?? typeIcons.task}
       </div>
 
       {/* Status cell */}
@@ -133,7 +138,6 @@ export function ActivityItem({
       {renderTypeMeta({
         type,
         dueDate,
-        metadata,
         onChangeDueDate,
         assigneeAvatarUrl,
         assigneeName,
@@ -145,7 +149,6 @@ export function ActivityItem({
 
 type TypeMetaProps = {
   type: ActivityType;
-  metadata?: ActivityMetadata;
   dueDate?: string;
   onChangeDueDate?: (date: Date | null) => void;
   assigneeName?: string | null;

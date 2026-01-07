@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { ActivityStatus } from './ActivityItem';
+import { ActivityStatus } from '@/features/activity/types';
 
 // Todo / In Progress / Done を同じサイズ感に揃える
 const STATUS_ICON_BASE_CLASS = 'h-4 w-4 transition-colors duration-150 ease-out';

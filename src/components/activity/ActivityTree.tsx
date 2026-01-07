@@ -1,6 +1,6 @@
 import * as React from 'react';
-import { ActivityItem, type ActivityStatus as RowStatus } from './ActivityItem';
-import { ActivityWithTags } from '@/features/activity/types';
+import { ActivityItem } from './ActivityItem';
+import { ActivityStatus as RowStatus, ActivityWithTags } from '@/features/activity/types';
 
 export type ActivityTreeProps = {
   projectKey: string;
@@ -77,7 +77,6 @@ export function ActivityTree({
             type={activity.type ?? 'task'}
             dueDate={activity.due_date ?? undefined}
             status={status}
-            metadata={activity.metadata ?? null}
             assigneeName={activity.assignee?.display_name || null}
             assigneeAvatarUrl={activity.assignee?.avatar_url || null}
             hasChildren={totalSubtasks > 0}
