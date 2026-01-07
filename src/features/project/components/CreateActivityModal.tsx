@@ -266,7 +266,6 @@ export function CreateActivityModal({
 }: CreateActivityModalProps) {
   const { render, visible } = useModalVisibility(open);
 
-  const typeActive = formValues.type !== 'task';
   const dueActive = !!formValues.dueDate;
   const assigneeActive = (formValues.assigneeIds ?? []).length > 0;
   const typeLabel = activityTypeToDisplay[formValues.type] ?? 'Activity';
