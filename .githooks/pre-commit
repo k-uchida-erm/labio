@@ -3,6 +3,7 @@
 
 # ステージングされたファイルをチェック（フォーマッタ実行前に保存）
 STAGED_FILES=$(git diff --cached --name-only)
+AUTO_STAGE_FILES=""
 
 # フォーマッタ実行前の未ステージング変更を記録（作業中のファイルを保護するため）
 # 一時ファイルに保存して、後で比較に使用
@@ -57,11 +58,8 @@ if command -v npx >/dev/null 2>&1; then
       npx supabase gen types typescript --project-id ucsurbtmhabygssexisq > src/types/database.types.ts
     fi
   fi
-  
-  # 型定義ファイルをPrettierでフォーマット（生成後に再フォーマット）
-  if [ -f src/types/database.types.ts ]; then
-    npx prettier --write src/types/database.types.ts 2>/dev/null || true
-  fi
+  git add src/types/database.types.ts 2>/dev/null || true
+  AUTO_STAGE_FILES="src/types/database.types.ts"
 fi
 
 # 修正されたファイルをすべてステージング
@@ -78,29 +76,18 @@ comm -13 "$BEFORE_UNSTAGED" "$AFTER_UNSTAGED" > "$FORMATTER_CHANGED" 2>/dev/null
 # 元々ステージングされていたファイルを再ステージング（フォーマッタで変更された可能性がある）
 if [ -n "$STAGED_FILES" ]; then
   echo "$STAGED_FILES" | while IFS= read -r file; do
-    if [ -n "$file" ] && [ -f "$file" ]; then
+    if [ -n "$file" ]; then
       git add "$file" 2>/dev/null || true
     fi
   done
 fi
 
-# フォーマッタ実行前には存在しなかったが、実行後に変更されたファイルをステージング
-# （型定義ファイルなど、フォーマッタで生成/変更されたファイル）
-if [ -s "$FORMATTER_CHANGED" ]; then
-  while IFS= read -r file; do
-    if [ -n "$file" ] && [ -f "$file" ]; then
-      # 元々ステージングされていたファイル、または型定義ファイルのみをステージング
-      # （作業中のファイルを保護）
-      if echo "$STAGED_FILES" | grep -Fxq "$file" || [ "$file" = "src/types/database.types.ts" ]; then
-        git add "$file" 2>/dev/null || true
-      fi
+if [ -n "$AUTO_STAGE_FILES" ]; then
+  echo "$AUTO_STAGE_FILES" | while IFS= read -r auto_file; do
+    if [ -n "$auto_file" ]; then
+      git add "$auto_file" 2>/dev/null || true
     fi
-  done < "$FORMATTER_CHANGED"
-fi
-
-# 型定義ファイルを確実にステージング（Prettierでフォーマットされた後）
-if [ -f src/types/database.types.ts ]; then
-  git add src/types/database.types.ts 2>/dev/null && echo "✅ 型定義ファイルをステージングしました"
+  done
 fi
 
 echo "✅ 自動フォーマット・Lint修正が完了しました"

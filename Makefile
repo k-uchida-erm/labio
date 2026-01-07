@@ -1,4 +1,4 @@
-.PHONY: help up down build rebuild logs shell clean install dev lint format test typecheck lint-fix format-check test-e2e db-types setup-hooks supabase-start supabase-stop supabase-sync supabase-reset supabase-migrate env-use-develop env-restore-local
+.PHONY: help up down build rebuild logs shell clean install dev lint format test typecheck lint-fix format-check test-e2e db-types setup-hooks supabase-start supabase-stop supabase-sync supabase-reset supabase-exec-sql supabase-seed-test-data env-use-develop env-restore-local
 # デフォルトターゲット
 help:
 	@echo "Labio 開発コマンド"
@@ -11,6 +11,8 @@ help:
 	@echo "  make logs      - ログを表示"
 	@echo "  make shell     - コンテナ内でシェルを起動"
 	@echo "  make clean     - コンテナ・ボリュームを削除"
+	@echo "  make storybook - Storybook を Docker で起動 (http://localhost:6006)"
+	@echo "  make down-story - Storybook 用に占有している 6006 番ポートのコンテナを停止"
 	@echo ""
 	@echo "開発ツール（Docker内で実行）:"
 	@echo "  make install   - 依存関係をインストール"
@@ -24,11 +26,12 @@ help:
 	@echo "  make setup-hooks - Gitフックをセットアップ"
 	@echo ""
 	@echo "DB同期:"
-	@echo "  make supabase-start     - ローカルSupabaseを起動"
-	@echo "  make supabase-stop      - ローカルSupabaseを停止"
-	@echo "  make supabase-sync      - リモート（labio-dev）から最新マイグレーションを取得してローカルDBを再構築"
-	@echo "  make supabase-reset     - ローカルのマイグレーションファイルのみでローカルDBを再構築（リモート同期なし）"
-	@echo "  make supabase-migrate   - 新しいマイグレーションファイルのみをローカルDBに適用（既存データは保持）"
+	@echo "  make supabase-start    - ローカルSupabaseを起動"
+	@echo "  make supabase-stop     - ローカルSupabaseを停止"
+	@echo "  make supabase-sync     - リモート（labio-dev）から最新マイグレーションを取得してローカルDBを再構築"
+	@echo "  make supabase-reset    - ローカルのマイグレーションファイルのみでローカルDBを再構築（リモート同期なし）"
+	@echo "  make supabase-exec-sql FILE=path/to/file.sql - 任意のSQLファイルを実行"
+	@echo "  make supabase-seed-test-data - テストデータを作成（scripts/create-test-data.sqlを実行）"
 	@echo ""
 	@echo "環境切替:"
 	@echo "  make env-use-develop   - .env.develop を .env.local に適用（既存は .env.local.backup に退避）"
@@ -68,6 +71,25 @@ shell:
 clean:
 	docker compose down -v --rmi local
 	@echo "✅ クリーンアップ完了"
+
+# Storybook を起動（Docker内）
+# STORYBOOK_PORT でホスト側ポートを変更可能（デフォルト 6006）
+STORYBOOK_PORT ?= 6006
+storybook:
+	docker compose run --rm -p $(STORYBOOK_PORT):6006 app sh -c "npm ci --legacy-peer-deps && npm run storybook -- --host 0.0.0.0 --port 6006"
+	@echo ""
+	@echo "✅ Storybook を起動しました: http://localhost:$(STORYBOOK_PORT)"
+
+# Storybook 用に 6006 を占有しているコンテナを停止
+down-story:
+	@echo "Stopping containers using port 6006 (storybook)..."
+	@IDS=$$(docker ps --filter "publish=6006" --format "{{.ID}}"); \
+	if [ -z "$$IDS" ]; then \
+		echo "No containers are using port 6006"; \
+	else \
+		docker stop $$IDS; \
+		echo "Stopped: $$IDS"; \
+	fi
 
 # =============================================================================
 # 開発ツール（Docker内で実行）
@@ -156,13 +178,36 @@ supabase-reset: supabase-start
 	@echo "⚠️  注意: リモートに既に適用されているマイグレーションがローカルにない場合、履歴の不一致が発生します"
 	@echo "   リモートの最新状態に同期するには、make supabase-sync を使用してください"
 
-# 新しいマイグレーションファイルのみをローカルDBに適用（既存データは保持）
-# 注意: ローカルSupabaseは起動している必要があります
-# 未適用のマイグレーションのみを適用します（既存データは保持されます）
-supabase-migrate: supabase-start
-	@echo "🔄 新しいマイグレーションをローカルDBに適用中..."
-	npx supabase migration up
-	@echo "✅ マイグレーションを適用しました（既存データは保持されています）"
+# 任意のSQLファイルを実行
+# 使用方法: make supabase-exec-sql FILE=path/to/file.sql
+# 例: make supabase-exec-sql FILE=scripts/create-test-data.sql
+supabase-exec-sql: supabase-start
+	@if [ -z "$(FILE)" ]; then \
+		echo "❌ FILEパラメータが指定されていません"; \
+		echo "   使用方法: make supabase-exec-sql FILE=path/to/file.sql"; \
+		exit 1; \
+	fi
+	@if [ ! -f "$(FILE)" ]; then \
+		echo "❌ SQLファイルが見つかりません: $(FILE)"; \
+		exit 1; \
+	fi
+	@echo "📝 SQLファイルを実行中: $(FILE)"
+	@CONTAINER=$$(docker ps --filter "name=supabase_db" --format "{{.Names}}" | head -1); \
+	if [ -z "$$CONTAINER" ]; then \
+		echo "⚠️  SupabaseのDockerコンテナが見つかりません。Supabase Studio (http://127.0.0.1:54323) のSQL Editorで $(FILE) を実行してください。"; \
+		exit 1; \
+	fi; \
+	docker exec -i $$CONTAINER psql -U postgres -d postgres < "$(FILE)"
+	@echo "✅ SQLファイルの実行が完了しました: $(FILE)"
+
+# テストデータを作成（scripts/create-test-data.sqlを実行）
+# supabase-exec-sqlのショートカット
+supabase-seed-test-data: supabase-start
+	@$(MAKE) supabase-exec-sql FILE=scripts/create-test-data.sql
+	@echo "✅ テストデータの作成が完了しました"
+	@echo "   Lab slug: ai-lab-a3f2"
+	@echo "   Project key: PINN"
+	@echo "   URL: http://localhost:3000/ai-lab-a3f2/PINN"
 
 # Gitフックをセットアップ
 # Dockerコンテナ内で実行する場合: make setup-hooks

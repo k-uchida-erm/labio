@@ -1,40 +1,40 @@
 'use client';
 
-// Re-export commonly used icons from lucide-react
+// Re-export commonly used icons from phosphor-react
 export {
-  Calendar as CalendarIcon,
+  CalendarBlank as CalendarIcon,
   Circle as StatusTodoIcon,
-  CircleDot as StatusInProgressIcon,
-  CheckCircle2 as StatusDoneIcon,
+  CircleHalf as StatusInProgressIcon,
+  CheckCircle as StatusDoneIcon,
   Square as CheckboxUncheckedIcon,
-  SquareCheck as CheckboxCheckedIcon,
-  ChevronRight as ChevronRightIcon,
-  ChevronDown as ChevronDownIcon,
+  CheckSquare as CheckboxCheckedIcon,
+  CaretRight as ChevronRightIcon,
+  CaretDown as ChevronDownIcon,
   Plus as PlusIcon,
-  ArrowUpDown as SortIcon,
-  Filter as FilterIcon,
-  Search as SearchIcon,
+  ArrowsDownUp as SortIcon,
+  FunnelSimple as FilterIcon,
+  MagnifyingGlass as SearchIcon,
   List as ListIcon,
-  LayoutGrid as KanbanIcon,
-  GanttChart as GanttIcon,
-  Box as BoxIcon,
-  Settings as SettingsIcon,
-  Menu as ReorderIcon,
-  Inbox as InboxIcon,
-  PanelLeft as SidebarIcon,
+  Kanban as KanbanIcon,
+  ChartBar as GanttIcon,
+  Cube as BoxIcon,
+  Gear as SettingsIcon,
+  ListNumbers as ReorderIcon,
+  Tray as InboxIcon,
+  SidebarSimple as SidebarIcon,
   User as ProfileIcon,
   UserCircle as UserIcon,
-} from 'lucide-react';
+} from 'phosphor-react';
 
-import { LucideProps } from 'lucide-react';
-import { Square, SquareCheck } from 'lucide-react';
+import type { IconProps } from 'phosphor-react';
+import { Square, CheckSquare } from 'phosphor-react';
 
 // Custom checkbox component that toggles between states
 export function CheckboxIcon({
   checked = false,
   size = 16,
   ...props
-}: LucideProps & { checked?: boolean }) {
-  const Icon = checked ? SquareCheck : Square;
-  return <Icon size={size} {...props} />;
+}: IconProps & { checked?: boolean }) {
+  const Icon = checked ? CheckSquare : Square;
+  return <Icon size={size} weight="bold" {...props} />;
 }

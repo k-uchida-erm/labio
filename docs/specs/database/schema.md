@@ -120,9 +120,12 @@
 - `UNIQUE(lab_id, project_id, sequence_number)`: Lab内で一意
 - 表示ID: `{projectKey}-{sequence_number}`（例: `PINN-1`）
 - `position`: Kanban/Listビューでの表示順序
+- `parent_id`: 親ActivityのID（サブタスク機能、オプション、自己参照）
+- `metadata`: タイプごとの追加情報を保持するjsonb（質問の回答待ちユーザー、実験条件など拡張用）。`idx_activities_metadata_type`でGINインデックスを付与。
 - `started_at`, `completed_at`: ステータス変更時に自動設定（トリガー）
+- サブタスクは親Activityの下にインデント表示され、トグルで開閉可能
 
-**関連**: `labs` (N:1), `projects` (N:1), `activity_tags` (1:N), `comments` (1:N), `attachments` (1:N)
+**関連**: `labs` (N:1), `projects` (1:N), `activities` (1:N, parent_id), `activity_tags` (1:N), `comments` (1:N), `attachments` (1:N)
 
 ### 3.7 tags（タグ）
 

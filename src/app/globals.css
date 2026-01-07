@@ -18,11 +18,20 @@
   /* Primary color */
   --primary: #5769f6;
   --primary-hover: #4558e5;
+
+  /* Typography */
+  --text-size-xxs: 0.6875rem; /* 11px */
+  --text-size-xs: 0.75rem; /* 12px */
+  --text-size-sm: 0.875rem; /* 14px */
+  --text-color-strong: #0f172a;
+  --text-color-muted: var(--slate-500);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
@@ -31,4 +40,54 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+}
+
+.ui-text-xxs {
+  font-size: var(--text-size-xxs);
+  line-height: 1.35;
+}
+
+.ui-text-xs {
+  font-size: var(--text-size-xs);
+  line-height: 1.4;
+}
+
+.ui-text-sm {
+  font-size: var(--text-size-sm);
+  line-height: 1.5;
+}
+
+.ui-text-strong {
+  color: var(--text-color-strong);
+}
+
+.ui-text-muted {
+  color: var(--text-color-muted);
+}
+
+.ui-text-label {
+  font-size: var(--text-size-xs);
+  color: var(--text-color-muted);
+  line-height: 1.4;
+  font-weight: 500;
+}
+
+.ui-icon-muted {
+  color: var(--text-color-muted);
+}
+
+@keyframes statusPulse {
+  0% {
+    transform: scale(0.9);
+    opacity: 0.4;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.status-pulse {
+  animation: statusPulse 160ms ease-out;
+  display: inline-flex;
 }

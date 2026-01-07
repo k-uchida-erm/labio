@@ -3,17 +3,15 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    env_file:
+      - .env.local
     ports:
       - '3000:3000'
     environment:
-      - NODE_ENV=development
-      - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL:-https://placeholder.supabase.co}
-      - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY:-placeholder-key}
-      - DOCKER_HOST=unix:///var/run/docker.sock
+      - NEXT_DISABLE_LIGHTNINGCSS=1
     volumes:
       - .:/app
       - /app/node_modules
-      - /app/.next
       - /var/run/docker.sock:/var/run/docker.sock
     # ホットリロードのためにホストのファイル変更を監視
     stdin_open: true
