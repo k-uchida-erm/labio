@@ -150,15 +150,14 @@ BEGIN
     RAISE NOTICE 'Lab slug: ai-lab-a3f2';
     RAISE NOTICE 'Project key: PINN';
     RAISE NOTICE 'URL: http://localhost:3000/ai-lab-a3f2/PINN';
+
+    -- 確認用メッセージ（DOブロック内で変数を利用）
+    RAISE NOTICE 'Lab作成完了 count=%', (SELECT COUNT(*) FROM public.labs WHERE slug = 'ai-lab-a3f2');
+    RAISE NOTICE 'Project作成完了 count=%',
+      (SELECT COUNT(*) FROM public.projects WHERE lab_id = lab_id_var AND key = 'PINN');
+    RAISE NOTICE 'Activity作成完了 count=%',
+      (SELECT COUNT(*) FROM public.activities WHERE lab_id = lab_id_var);
   ELSE
     RAISE EXCEPTION 'Projectの作成に失敗しました';
   END IF;
 END $$;
-
--- 確認用クエリ
-SELECT 'Lab作成完了' as status, COUNT(*) as count FROM labs WHERE slug = 'ai-lab-a3f2';
-SELECT 'Project作成完了' as status, COUNT(*) as count FROM projects WHERE key = 'PINN';
-SELECT 'Activity作成完了' as status, COUNT(*) as count
-FROM activities
-WHERE lab_id = lab_id_var;
-
