@@ -10,7 +10,6 @@ import { Calendar } from '@/components/ui/calendar';
 export type DueDateMenuProps = {
   dueDate?: string;
   onChangeDueDate?: (dueDate: Date | null) => void;
-  active?: boolean;
   variant?: 'table' | 'badge';
   widthClass?: string;
   placement?: 'left' | 'right' | 'bottom';
@@ -20,7 +19,6 @@ export type DueDateMenuProps = {
 export function DueDateMenu({
   dueDate,
   onChangeDueDate,
-  active = false,
   variant = 'table',
   widthClass = '',
   placement = 'bottom',

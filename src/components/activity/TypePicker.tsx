@@ -8,7 +8,6 @@ import type { ActivityType } from '@/features/activity/types';
 
 type TypePickerProps = {
   value: ActivityType;
-  active?: boolean;
   onChange: (val: ActivityType) => void;
 };
 
@@ -30,7 +29,7 @@ const typeColors: Record<ActivityType, { badge: string; icon: string }> = {
   note: { badge: 'bg-pink-50 text-pink-600', icon: 'text-pink-500' },
 };
 
-export function TypePicker({ value, active, onChange }: TypePickerProps) {
+export function TypePicker({ value, onChange }: TypePickerProps) {
   const [open, setOpen] = React.useState(false);
   const currentColor = typeColors[value] ?? {
     badge: 'bg-slate-100 text-slate-700',
