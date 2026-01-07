@@ -100,8 +100,7 @@ BEGIN
       'todo',
       (CURRENT_DATE + INTERVAL '7 days')::timestamptz,
       test_user_id
-    )
-    ON CONFLICT DO NOTHING;
+    );
 
     -- Activity 2
     INSERT INTO public.activities (
@@ -123,8 +122,7 @@ BEGIN
       'in_progress',
       (CURRENT_DATE + INTERVAL '14 days')::timestamptz,
       test_user_id
-    )
-    ON CONFLICT DO NOTHING;
+    );
 
     -- Activity 3
     INSERT INTO public.activities (
@@ -146,8 +144,7 @@ BEGIN
       'done',
       (CURRENT_DATE - INTERVAL '1 day')::timestamptz,
       test_user_id
-    )
-    ON CONFLICT DO NOTHING;
+    );
 
     RAISE NOTICE '✅ テストデータの作成が完了しました！';
     RAISE NOTICE 'Lab slug: ai-lab-a3f2';
@@ -161,5 +158,7 @@ END $$;
 -- 確認用クエリ
 SELECT 'Lab作成完了' as status, COUNT(*) as count FROM labs WHERE slug = 'ai-lab-a3f2';
 SELECT 'Project作成完了' as status, COUNT(*) as count FROM projects WHERE key = 'PINN';
-SELECT 'Activity作成完了' as status, COUNT(*) as count FROM activities;
+SELECT 'Activity作成完了' as status, COUNT(*) as count
+FROM activities
+WHERE lab_id = lab_id_var;
 

@@ -170,7 +170,7 @@
 
 - 同じ`project_id`のActivityの最大`sequence_number`を取得
 - 最大値+1を設定（初回は1）
-- 削除済み（`deleted_at IS NOT NULL`）は除外
+- 削除済みも含めて最大値を取得（`deleted_at`は除外しない）
 
 **使用基準**: ✅ トリガーから呼び出される、データベース内処理
 

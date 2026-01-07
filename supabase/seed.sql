@@ -109,8 +109,7 @@ BEGIN
       (CURRENT_DATE + INTERVAL '7 days')::timestamptz,
       owner_user_id,
       owner_user_id
-    )
-    ON CONFLICT DO NOTHING;
+    );
 
     -- Activity 2
     INSERT INTO public.activities (
@@ -134,8 +133,7 @@ BEGIN
       (CURRENT_DATE + INTERVAL '14 days')::timestamptz,
       owner_user_id,
       owner_user_id
-    )
-    ON CONFLICT DO NOTHING;
+    );
 
     -- Activity 3
     INSERT INTO public.activities (
@@ -159,8 +157,7 @@ BEGIN
       (CURRENT_DATE - INTERVAL '1 day')::timestamptz,
       owner_user_id,
       owner_user_id
-    )
-    ON CONFLICT DO NOTHING;
+    );
 
     RAISE NOTICE 'テストデータの作成が完了しました！';
     RAISE NOTICE 'Lab slug: ai-lab-a3f2';
