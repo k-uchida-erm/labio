@@ -30,11 +30,11 @@ jobs:
           SUPABASE_ACCESS_TOKEN: ${{ env.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_PROJECT_ID_DEV: ${{ env.SUPABASE_PROJECT_ID_DEV }}
         run: |
-          # プロジェクトにリンク
-          npx supabase link --project-ref "$SUPABASE_PROJECT_ID_DEV" || true
-
+          # プロジェクトにリンク（履歴不一致の警告は無視）
+          npx supabase link --project-ref "$SUPABASE_PROJECT_ID_DEV" 2>&1 | grep -v "Remote migration versions not found" || true
           # マイグレーションを適用（新しいマイグレーションのみ）
-          echo "🔄 マイグレーションを適用中..."
+          # リモートに既に適用されているマイグレーションは自動的にスキップされる
+          # 注意: 今後はMCPで書き込みができないため、必ずマイグレーションファイルを書く運用
           npx supabase db push
 
       - name: Generate TypeScript types from labio-dev
@@ -43,11 +43,8 @@ jobs:
         run: |
           npx supabase gen types typescript --project-id "$SUPABASE_PROJECT_ID_DEV" > src/types/database.types.ts
 
-      - name: Commit type definitions
-        if: success()
-        run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git add src/types/database.types.ts
-          git diff --staged --quiet || git commit -m "chore: update database types from labio-dev [skip ci]"
-          git push || echo "No changes to commit"
+      - name: Upload generated types
+        uses: actions/upload-artifact@v4
+        with:
+          name: database-types-dev
+          path: src/types/database.types.ts
