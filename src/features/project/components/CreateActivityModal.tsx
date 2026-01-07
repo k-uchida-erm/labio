@@ -163,6 +163,7 @@ type ModalPickersProps = {
   assignees: { id: string; name: string; avatarUrl?: string | null }[];
   onDueDateChange: (value: Date | null) => void;
   onAssigneeChange: (ids: string[]) => void;
+  className?: string;
 };
 
 const ModalPickers = React.memo(function ModalPickers({
@@ -172,9 +173,10 @@ const ModalPickers = React.memo(function ModalPickers({
   assignees,
   onDueDateChange,
   onAssigneeChange,
+  className,
 }: ModalPickersProps) {
   return (
-    <div className="flex flex-col gap-3">
+    <div className={`flex flex-col gap-3 ${className ?? ''}`}>
       <ModalDueDatePicker
         value={values.dueDate}
         active={dueActive}
@@ -293,7 +295,7 @@ export function CreateActivityModal({
         <div className="mt-4 flex flex-col gap-6 md:flex-row">
           <div className="flex-1">
             <div className="flex flex-col gap-3">
-              <TypePicker value={formValues.type} active={typeActive} onChange={onTypeChange} />
+              <TypePicker value={formValues.type} onChange={onTypeChange} />
               <ModalFields
                 values={formValues}
                 errors={formErrors}

@@ -25,7 +25,3 @@ export type LoginResult =
       code: LoginErrorCode;
       message: string;
     };
-
-export type LoginResult =
-  | { success: true; redirectTo?: string }
-  | { success: false; error: { code: string; message: string } };

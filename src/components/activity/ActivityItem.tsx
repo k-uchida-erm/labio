@@ -175,7 +175,6 @@ function TaskActivityMeta({
           dueDate={dueDate}
           onChangeDueDate={onChangeDueDate}
           variant="badge"
-          active={!!dueDate}
           widthClass="w-36"
           placement="left"
         />
