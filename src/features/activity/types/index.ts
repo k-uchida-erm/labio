@@ -1,13 +1,21 @@
 import { Tables, Enums } from '@/types/database.types';
 
-// DBから自動生成された型を使用
 export type Activity = Tables<'activities'>;
+export type ActivityMetadata = Tables<'activities'>['metadata'];
 export type ActivityStatus = Enums<'activity_status'>;
 export type ActivityType = Enums<'activity_type'>;
 export type Profile = Tables<'profiles'>;
 
 // 拡張型（JOINなどで使用）
 export type ActivityWithAssignee = Activity & {
+  assignee?: Pick<Profile, 'id' | 'display_name' | 'avatar_url'> | null;
+};
+
+type TagPreview = Pick<Tables<'tags'>, 'id' | 'name' | 'color'>;
+
+export type ActivityWithTags = Activity & {
+  // activity_tags 経由で JOIN された tags
+  tags?: TagPreview[];
   assignee?: Pick<Profile, 'id' | 'display_name' | 'avatar_url'> | null;
 };
 

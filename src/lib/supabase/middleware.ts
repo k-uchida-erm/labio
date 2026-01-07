@@ -41,23 +41,29 @@ export async function updateSession(request: NextRequest) {
     data: { session },
   } = await supabase.auth.getSession();
 
-  // 認証が必要なパス（動的ルート /[labSlug]/[projectSlug] も保護）
+  // 認証が必要なパス
   const protectedPaths = ['/dashboard', '/settings'];
   const isProtectedPath = protectedPaths.some((path) => request.nextUrl.pathname.startsWith(path));
 
-  // 認証ページ（ログイン済みユーザーはリダイレクト）
-  const authPaths = ['/login', '/signup', '/forgot-password'];
-  const isAuthPath = authPaths.some((path) => request.nextUrl.pathname.startsWith(path));
+  // 動的ルート（/[labSlug]/[projectSlug]）も保護
+  const pathname = request.nextUrl.pathname;
+  const isDynamicLabRoute =
+    /^\/[^/]+\/[^/]+$/.test(pathname) &&
+    pathname !== '/login' &&
+    pathname !== '/signup' &&
+    pathname !== '/forgot-password';
+  const needsAuth = isProtectedPath || isDynamicLabRoute;
 
-  if (isProtectedPath && !session) {
+  // 認証が必要なパスに未認証でアクセスした場合
+  if (needsAuth && !session) {
     const redirectUrl = new URL('/login', request.url);
     redirectUrl.searchParams.set('redirect', request.nextUrl.pathname);
     return NextResponse.redirect(redirectUrl);
   }
 
-  if (isAuthPath && session) {
-    return NextResponse.redirect(new URL('/dashboard', request.url));
-  }
+  // 認証ページにアクセスした場合、セッションがあってもリダイレクトしない
+  // （セッションが無効な場合や、Labのメンバーでない場合があるため）
+  // ログインページ側で適切に処理する
 
   return response;
 }

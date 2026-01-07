@@ -119,14 +119,14 @@ export function useProject(projectId: string | undefined) {
   return { project, loading, error };
 }
 
-export function useProjectBySlug(labId: string | undefined, projectSlug: string | undefined) {
+export function useProjectByKey(labId: string | undefined, projectKey: string | undefined) {
   const [project, setProject] = useState<ProjectWithAssignee | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
     const fetchProject = async () => {
-      if (!labId || !projectSlug) {
+      if (!labId || !projectKey) {
         setLoading(false);
         return;
       }
@@ -134,40 +134,38 @@ export function useProjectBySlug(labId: string | undefined, projectSlug: string 
       const supabase = createClient();
 
       try {
-        const { data, error: fetchError } = await supabase
+        // Projectをkeyで取得（仕様書に従い、lab_idとkeyで検索）
+        const { data: projectData, error: fetchError } = await supabase
           .from('projects')
           .select('*')
           .eq('lab_id', labId)
+          .eq('key', projectKey)
           .is('deleted_at', null)
-          .order('created_at', { ascending: true })
-          .limit(1);
+          .single();
 
         if (fetchError) throw fetchError;
 
-        if (data && data.length > 0) {
-          const projectData = data[0];
-          let assignee = null;
-
-          if (projectData.assignee_id) {
-            const { data: profileData } = await supabase
-              .from('profiles')
-              .select('id, display_name, avatar_url')
-              .eq('id', projectData.assignee_id)
-              .single();
-            assignee = profileData;
-          }
-
-          setProject({ ...projectData, assignee });
+        let assignee = null;
+        if (projectData?.assignee_id) {
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('id, display_name, avatar_url')
+            .eq('id', projectData.assignee_id)
+            .single();
+          assignee = profileData;
         }
+
+        setProject(projectData ? { ...projectData, assignee } : null);
       } catch (err) {
         setError(err instanceof Error ? err : new Error('Failed to fetch project'));
+        setProject(null);
       } finally {
         setLoading(false);
       }
     };
 
     fetchProject();
-  }, [labId, projectSlug]);
+  }, [labId, projectKey]);
 
   return { project, loading, error };
 }
