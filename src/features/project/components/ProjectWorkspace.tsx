@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import ProjectWorkspaceLayout from '@/features/project/components/layout/ProjectWorkspaceLayout';
 import ProjectMainView from '@/features/project/components/layout/ProjectMainView';
 import { FilterTag } from '@/components/activity/FilterDropdownMenu';
@@ -119,6 +119,14 @@ export function ProjectWorkspace({ labSlug, projectKey }: ProjectWorkspaceProps)
   const [sortOption, setSortOption] = useState<SortOption | null>(null);
   const filterMenuRef = useRef<HTMLDivElement>(null);
   const createInputRef = useRef<HTMLInputElement | null>(null);
+
+  // 最後にアクセスしたProjectページのURLを保存
+  useEffect(() => {
+    if (labSlug && projectKey) {
+      const projectUrl = `/${labSlug}/${projectKey}`;
+      localStorage.setItem('lastProjectUrl', projectUrl);
+    }
+  }, [labSlug, projectKey]);
   const { lab, members, error: labError } = useLab(labSlug);
   const { projects } = useProjects(lab?.id);
   const { project, error: projectError } = useProjectByKey(lab?.id, projectKey);

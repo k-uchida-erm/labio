@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { CaretDown, Cube, Planet, SidebarSimple, Tray, UserCircle } from 'phosphor-react';
 
@@ -118,6 +119,13 @@ export function ProjectSidebar({
             <Tray size={16} weight="light" />
             <span>Inbox</span>
           </button>
+          <Link
+            href="/profile"
+            className="flex h-6 w-full items-center justify-start gap-2 rounded-md bg-transparent px-4 py-1 text-[12px] leading-5 text-slate-900 opacity-80 transition-colors duration-150 hover:bg-slate-100"
+          >
+            <UserCircle size={16} weight="light" />
+            <span>Profile</span>
+          </Link>
         </div>
 
         {renderSection(
