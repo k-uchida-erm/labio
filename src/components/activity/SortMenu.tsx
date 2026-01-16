@@ -22,6 +22,7 @@ export type SortOption = {
 export type SortMenuProps = {
   sortOption: SortOption | null;
   onSortChange: (option: SortOption | null) => void;
+  compact?: boolean;
 };
 
 const SORT_OPTIONS: Array<{
@@ -40,7 +41,7 @@ const SORT_OPTIONS: Array<{
   { field: 'title', label: 'Title', icon: <TextT size={14} weight="light" /> },
 ];
 
-export function SortMenu({ sortOption, onSortChange }: SortMenuProps) {
+export function SortMenu({ sortOption, onSortChange, compact = false }: SortMenuProps) {
   const [open, setOpen] = useState(false);
 
   const handleSelectSort = (field: SortOption['field'], direction: 'asc' | 'desc') => {
@@ -62,11 +63,13 @@ export function SortMenu({ sortOption, onSortChange }: SortMenuProps) {
       <DropdownTrigger>
         <button
           type="button"
-          className="flex h-6 items-center gap-1 rounded-md px-2 hover:bg-slate-100"
+          className={`flex h-6 items-center rounded-md hover:bg-slate-100 ${
+            compact ? 'w-8 justify-center' : 'gap-1 px-2'
+          }`}
           aria-label="Sort"
         >
           <SortAscending size={16} weight="light" className="ui-text-strong" />
-          <span className="ui-text-xxs ui-text-muted">Sort</span>
+          {!compact && <span className="ui-text-xxs ui-text-muted">Sort</span>}
         </button>
       </DropdownTrigger>
       <DropdownContent className="z-50 w-72 p-0">

@@ -47,6 +47,7 @@ export type ActivityToolbarProps = {
   onExpandAll?: () => void;
   onCollapseAll?: () => void;
   hasExpanded?: boolean;
+  compactControls?: boolean;
 };
 
 const MAX_VISIBLE_TAGS = 3;
@@ -73,12 +74,16 @@ export function ActivityToolbar({
   onExpandAll,
   onCollapseAll,
   hasExpanded = false,
+  compactControls = false,
 }: ActivityToolbarProps) {
   const visibleTags = filters.slice(0, MAX_VISIBLE_TAGS);
   const hasOverflow = filters.length > MAX_VISIBLE_TAGS;
   const [customOpen, setCustomOpen] = useState(false);
   const customMenuRef = useRef<HTMLDivElement | null>(null);
   const assigneeMap = useMemo(() => new Map(assignees.map((a) => [a.id, a])), [assignees]);
+  const toolbarButtonClass = compactControls
+    ? 'flex h-6 w-8 items-center justify-center rounded-md hover:bg-slate-100'
+    : 'flex h-6 items-center gap-1 rounded-md px-2 hover:bg-slate-100';
 
   return (
     <div className="flex h-12 min-h-[48px] w-full flex-none items-center justify-between gap-2 overflow-visible border-y border-slate-200 px-4">
@@ -104,13 +109,9 @@ export function ActivityToolbar({
         >
           <div ref={filterMenuRef}>
             <DropdownTrigger>
-              <button
-                type="button"
-                className="flex h-6 items-center gap-1 rounded-md px-2 hover:bg-slate-100"
-                aria-label="Open filter menu"
-              >
+              <button type="button" className={toolbarButtonClass} aria-label="Open filter menu">
                 <FunnelSimple size={16} weight="light" className="ui-text-strong" />
-                <span className="ui-text-xxs ui-text-muted">Filter</span>
+                {!compactControls && <span className="ui-text-xxs ui-text-muted">Filter</span>}
               </button>
             </DropdownTrigger>
           </div>
@@ -168,16 +169,20 @@ export function ActivityToolbar({
         )}
 
         {/* Sort button */}
-        <SortMenu sortOption={sortOption} onSortChange={onSortChange} />
+        <SortMenu sortOption={sortOption} onSortChange={onSortChange} compact={compactControls} />
 
         {/* Expand / Collapse all */}
         <button
           type="button"
-          className="flex h-6 items-center gap-1 rounded-md px-2 hover:bg-slate-100"
+          className={`${toolbarButtonClass} ${compactControls ? 'px-0' : ''}`}
           onClick={hasExpanded ? onCollapseAll : onExpandAll}
           aria-label={hasExpanded ? 'Collapse all' : 'Expand all'}
         >
-          <div className="flex flex-col items-center leading-none">
+          <div
+            className={`flex flex-col items-center leading-none ${
+              compactControls ? 'justify-center' : ''
+            }`}
+          >
             <CaretUp
               size={12}
               weight="light"
@@ -193,7 +198,9 @@ export function ActivityToolbar({
               }`}
             />
           </div>
-          <span className="ui-text-xxs ui-text-muted">{hasExpanded ? 'Collapse' : 'Expand'}</span>
+          {!compactControls && (
+            <span className="ui-text-xxs ui-text-muted">{hasExpanded ? 'Collapse' : 'Expand'}</span>
+          )}
         </button>
 
         {/* Custom menu */}
@@ -206,11 +213,11 @@ export function ActivityToolbar({
           <DropdownTrigger>
             <button
               type="button"
-              className="flex h-6 items-center gap-1 rounded-md px-2 hover:bg-slate-100"
+              className={toolbarButtonClass}
               aria-label="Open customization menu"
             >
               <Wrench size={16} weight="light" className="ui-text-strong" />
-              <span className="ui-text-xxs ui-text-muted">Custom</span>
+              {!compactControls && <span className="ui-text-xxs ui-text-muted">Custom</span>}
             </button>
           </DropdownTrigger>
           <DropdownContent className="z-50 w-48 p-0">
@@ -240,7 +247,7 @@ export function ActivityToolbar({
 
       <button
         type="button"
-        className="flex h-8 items-center gap-2 rounded-lg bg-[#5769f6] px-4 text-[14px] font-medium text-white hover:bg-[#4558e5]"
+        className="flex h-8 shrink-0 items-center gap-2 rounded-lg bg-[#5769f6] px-4 text-[14px] font-medium whitespace-nowrap text-white hover:bg-[#4558e5]"
         onClick={() => onAddActivity?.('task')}
       >
         <Plus size={16} weight="bold" />

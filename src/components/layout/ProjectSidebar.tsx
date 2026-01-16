@@ -15,6 +15,7 @@ export type ProjectSidebarProps = {
   allProjects?: SidebarSectionItem[];
   members?: SidebarSectionItem[];
   onToggle?: () => void;
+  collapsed?: boolean;
 };
 
 export function ProjectSidebar({
@@ -23,10 +24,45 @@ export function ProjectSidebar({
   allProjects,
   members,
   onToggle,
+  collapsed = false,
 }: ProjectSidebarProps) {
   const [myProjectsOpen, setMyProjectsOpen] = useState(true);
   const [allProjectsOpen, setAllProjectsOpen] = useState(true);
   const [membersOpen, setMembersOpen] = useState(true);
+
+  if (collapsed) {
+    return (
+      <aside className="flex h-full w-12 flex-col items-center border border-slate-300 bg-slate-50">
+        <div className="flex flex-col items-center gap-2 py-3">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-10 w-10 rounded-md text-slate-600 hover:text-slate-900"
+            onClick={onToggle}
+            aria-label="Expand sidebar"
+          >
+            <SidebarSimple size={18} weight="light" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-10 w-10 rounded-md text-slate-600 hover:text-slate-900"
+            aria-label="My activities"
+          >
+            <Cube size={16} weight="light" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-10 w-10 rounded-md text-slate-600 hover:text-slate-900"
+            aria-label="Inbox"
+          >
+            <Tray size={16} weight="light" />
+          </Button>
+        </div>
+      </aside>
+    );
+  }
 
   const renderSection = (
     title: string,
@@ -81,7 +117,7 @@ export function ProjectSidebar({
   };
 
   return (
-    <aside className="flex h-full w-[200px] flex-col rounded-[6px] border border-slate-300 bg-white">
+    <aside className="flex h-full w-[200px] flex-col border border-slate-300 bg-slate-50">
       {/* Header */}
       <div className="flex h-14 items-center justify-between px-4">
         <div className="flex items-center gap-2">

@@ -2,7 +2,7 @@
 
 import { Dropdown, DropdownContent, DropdownTrigger } from '@/components/ui/dropdown';
 import { Badge } from '@/components/ui/badge';
-import { Cube } from 'phosphor-react';
+import { Cube, Flask, Question, ClipboardText, UsersThree, Note } from 'phosphor-react';
 import React from 'react';
 import type { ActivityType } from '@/features/activity/types';
 
@@ -21,12 +21,21 @@ const options: Array<{ value: ActivityType; label: string }> = [
 ];
 
 const typeColors: Record<ActivityType, { badge: string; icon: string }> = {
-  task: { badge: 'bg-indigo-50 text-indigo-600', icon: 'text-indigo-500' },
-  experiment: { badge: 'bg-emerald-50 text-emerald-600', icon: 'text-emerald-500' },
-  question: { badge: 'bg-amber-50 text-amber-600', icon: 'text-amber-500' },
-  review: { badge: 'bg-blue-50 text-blue-600', icon: 'text-blue-500' },
-  meeting: { badge: 'bg-sky-50 text-sky-600', icon: 'text-sky-500' },
-  note: { badge: 'bg-pink-50 text-pink-600', icon: 'text-pink-500' },
+  task: { badge: 'bg-indigo-100 text-indigo-700', icon: 'text-indigo-600' },
+  experiment: { badge: 'bg-emerald-100 text-emerald-700', icon: 'text-emerald-600' },
+  question: { badge: 'bg-amber-100 text-amber-700', icon: 'text-amber-600' },
+  review: { badge: 'bg-blue-100 text-blue-700', icon: 'text-blue-600' },
+  meeting: { badge: 'bg-sky-100 text-sky-700', icon: 'text-sky-600' },
+  note: { badge: 'bg-pink-100 text-pink-700', icon: 'text-pink-600' },
+};
+
+const typeIconComponents: Record<ActivityType, typeof Cube> = {
+  task: Cube,
+  experiment: Flask,
+  question: Question,
+  review: ClipboardText,
+  meeting: UsersThree,
+  note: Note,
 };
 
 export function TypePicker({ value, onChange }: TypePickerProps) {
@@ -35,6 +44,7 @@ export function TypePicker({ value, onChange }: TypePickerProps) {
     badge: 'bg-slate-100 text-slate-700',
     icon: 'text-slate-600',
   };
+  const IconComponent = typeIconComponents[value] ?? Cube;
 
   return (
     <Dropdown open={open} onOpenChange={setOpen} placement="bottom" strategy="fixed">
@@ -44,7 +54,7 @@ export function TypePicker({ value, onChange }: TypePickerProps) {
           size="xs"
           className={`flex h-8 items-center gap-2 rounded-full px-3 text-xs font-medium ${currentColor.badge}`}
         >
-          <Cube size={14} weight="light" className={currentColor.icon} />
+          <IconComponent size={14} weight="light" className={currentColor.icon} />
           <span className="capitalize">
             {options.find((opt) => opt.value === value)?.label ?? value}
           </span>
@@ -66,7 +76,11 @@ export function TypePicker({ value, onChange }: TypePickerProps) {
                 setOpen(false);
               }}
             >
-              <Cube size={13} weight="light" className={typeColors[opt.value].icon} />
+              {React.createElement(typeIconComponents[opt.value] ?? Cube, {
+                size: 13,
+                weight: 'light',
+                className: typeColors[opt.value].icon,
+              })}
               <span className="capitalize">{opt.label}</span>
             </button>
           ))}

@@ -5,6 +5,8 @@ import { createClient } from '@/lib/supabase/client';
 import { Activity, ActivityStatus, ActivityWithTags, Profile } from '../types';
 import { Tables } from '@/types/database.types';
 import { createActivityRecord } from '@/features/activity/api/createActivity';
+import { MAX_ACTIVITY_DEPTH_ERROR } from '@/features/activity/constants';
+import { buildActivityDepthMap, canCreateChildAtDepth } from '@/features/activity/utils/depth';
 
 type StatusChangeReason = 'user' | 'cascade' | 'derived' | 'undo' | 'redo';
 
@@ -476,6 +478,66 @@ export function useActivities(projectId: string | undefined, actorId?: string | 
     [setActivitiesWithRef, setError]
   );
 
+  const updateActivityTitle = useCallback(
+    async (activityId: string, title: string) => {
+      const supabase = createClient();
+
+      try {
+        const updateData = {
+          title: title.trim() || 'Untitled',
+        };
+
+        const { error: updateError } = await supabase
+          .from('activities')
+          .update(updateData)
+          .eq('id', activityId);
+
+        if (updateError) throw updateError;
+
+        // ローカル状態を更新
+        setActivitiesWithRef((prev) =>
+          prev.map((activity) =>
+            activity.id === activityId ? { ...activity, ...updateData } : activity
+          )
+        );
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error('Failed to update activity title'));
+        throw err;
+      }
+    },
+    [setActivitiesWithRef, setError]
+  );
+
+  const updateActivityDescription = useCallback(
+    async (activityId: string, description: string | null) => {
+      const supabase = createClient();
+
+      try {
+        const updateData = {
+          description: description?.trim() || null,
+        };
+
+        const { error: updateError } = await supabase
+          .from('activities')
+          .update(updateData)
+          .eq('id', activityId);
+
+        if (updateError) throw updateError;
+
+        // ローカル状態を更新
+        setActivitiesWithRef((prev) =>
+          prev.map((activity) =>
+            activity.id === activityId ? { ...activity, ...updateData } : activity
+          )
+        );
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error('Failed to update activity description'));
+        throw err;
+      }
+    },
+    [setActivitiesWithRef, setError]
+  );
+
   const createActivity = useCallback(
     async (data: {
       lab_id: string;
@@ -491,6 +553,13 @@ export function useActivities(projectId: string | undefined, actorId?: string | 
     }) => {
       try {
         setError(null);
+        const depthMap = buildActivityDepthMap(activitiesRef.current);
+        const canCreate = canCreateChildAtDepth(depthMap, data.parent_id ?? null);
+        if (!canCreate) {
+          const err = new Error(MAX_ACTIVITY_DEPTH_ERROR);
+          setError(err);
+          throw err;
+        }
         const newActivity = await createActivityRecord(data);
         setActivitiesWithRef((prev) => [...prev, newActivity]);
         return newActivity;
@@ -506,6 +575,54 @@ export function useActivities(projectId: string | undefined, actorId?: string | 
     [setActivitiesWithRef]
   );
 
+  const deleteActivities = useCallback(
+    async (activityIds: string[]) => {
+      const uniqueIds = Array.from(new Set(activityIds));
+      if (uniqueIds.length === 0) return;
+
+      const snapshot = activitiesRef.current;
+      const childrenByParent = new Map<string | null, string[]>();
+      snapshot.forEach((activity) => {
+        const parentId = activity.parent_id ?? null;
+        const list = childrenByParent.get(parentId) ?? [];
+        list.push(activity.id);
+        childrenByParent.set(parentId, list);
+      });
+
+      const idsToRemove = new Set<string>(uniqueIds);
+      const queue = [...uniqueIds];
+      while (queue.length > 0) {
+        const currentId = queue.pop()!;
+        const children = childrenByParent.get(currentId) ?? [];
+        children.forEach((childId) => {
+          if (!idsToRemove.has(childId)) {
+            idsToRemove.add(childId);
+            queue.push(childId);
+          }
+        });
+      }
+
+      setActivitiesWithRef((prev) => prev.filter((activity) => !idsToRemove.has(activity.id)));
+
+      try {
+        const supabase = createClient();
+        const { error: deleteError } = await supabase
+          .from('activities')
+          .delete()
+          .in('id', uniqueIds);
+
+        if (deleteError) throw deleteError;
+
+        await recalculateAndPersistAllDerivedStatuses();
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error('Failed to delete activities'));
+        setActivitiesWithRef(snapshot);
+        throw err;
+      }
+    },
+    [recalculateAndPersistAllDerivedStatuses, setActivitiesWithRef]
+  );
+
   return {
     activities,
     loading,
@@ -513,7 +630,10 @@ export function useActivities(projectId: string | undefined, actorId?: string | 
     updateActivityStatus,
     markActivityAndDescendantsDone,
     updateActivityDueDate,
+    updateActivityTitle,
+    updateActivityDescription,
     createActivity,
+    deleteActivities,
     refetch: fetchActivities,
     undoLastStatusChange: useCallback(async () => {
       if (!actorId) return;
