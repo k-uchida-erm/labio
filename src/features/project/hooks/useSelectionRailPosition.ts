@@ -35,11 +35,13 @@ export function useSelectionRailPosition({
   }, [mainRef]);
 
   useEffect(() => {
-    updateBounds();
+    const frame = requestAnimationFrame(() => updateBounds());
+    return () => cancelAnimationFrame(frame);
   }, [updateBounds]);
 
   useEffect(() => {
-    updateBounds();
+    const frame = requestAnimationFrame(() => updateBounds());
+    return () => cancelAnimationFrame(frame);
   }, [panelVisible, sidebarOpen, updateBounds]);
 
   useEffect(() => {

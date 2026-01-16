@@ -384,9 +384,6 @@ export function useProjectWorkspaceController({
     const completedSubtasks = allChildren.filter(
       (a) => normalizeActivityStatus(a.status) === 'done'
     ).length;
-    const hasInProgressChild = allChildren.some(
-      (a) => normalizeActivityStatus(a.status) === 'in_progress'
-    );
 
     const calculatedStatus = calculateAggregatedStatus(
       panelActivity.status,
