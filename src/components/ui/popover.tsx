@@ -142,7 +142,7 @@ export function Popover({
           createPortal(
             <div
               ref={contentRef}
-              className="fixed z-50"
+              className="fixed z-[70]"
               style={{
                 ...contentStyle,
                 visibility: position ? 'visible' : 'hidden',
@@ -153,7 +153,7 @@ export function Popover({
             document.body
           )
         ) : (
-          <div ref={contentRef} className="absolute z-50" style={contentStyle}>
+          <div ref={contentRef} className="absolute z-[70]" style={contentStyle}>
             {React.Children.toArray(children)[1]}
           </div>
         ))}

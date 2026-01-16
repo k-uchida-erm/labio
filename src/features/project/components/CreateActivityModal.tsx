@@ -1,5 +1,5 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { X } from 'phosphor-react';
+import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Switch } from '@/components/ui/switch';
 import AssigneePicker from '@/components/activity/AssigneePicker';
 import ModalDueDatePicker from '@/features/project/components/ModalDueDatePicker';
@@ -9,8 +9,8 @@ import type {
   CreateActivityFormValues,
   CreateActivityFormErrors,
 } from '@/features/project/hooks/useCreateActivityForm';
-
-type Breadcrumb = { label: string; title?: string };
+import { ActivityBreadcrumbs } from '@/components/activity/ActivityBreadcrumbs';
+import type { Breadcrumb } from '@/components/activity/activity-detail/types';
 
 function useModalVisibility(open: boolean) {
   const [render, setRender] = useState(open);
@@ -40,75 +40,6 @@ function useModalVisibility(open: boolean) {
 
   return { render, visible };
 }
-
-type ModalHeaderProps = {
-  breadcrumbs: Breadcrumb[];
-  onClose: () => void;
-};
-
-const ModalHeader = React.memo(function ModalHeader({ breadcrumbs, onClose }: ModalHeaderProps) {
-  const breadcrumbRef = useRef<HTMLDivElement>(null);
-  const [hoveredCrumb, setHoveredCrumb] = useState<{
-    idx: number;
-    x: number;
-    title?: string;
-  } | null>(null);
-
-  const handleCrumbHover = useCallback((idx: number, target: HTMLButtonElement, title?: string) => {
-    const containerRect = breadcrumbRef.current?.getBoundingClientRect();
-    const targetRect = target.getBoundingClientRect();
-    const center = containerRect ? targetRect.left - containerRect.left + targetRect.width / 2 : 0;
-    setHoveredCrumb({ idx, x: center, title });
-  }, []);
-
-  return (
-    <div className="relative mb-4 flex items-center justify-between">
-      <div
-        ref={breadcrumbRef}
-        className="relative flex items-center gap-1.5 text-sm font-semibold text-slate-900"
-      >
-        {breadcrumbs.map((crumb, idx) => {
-          const isCurrent = idx === breadcrumbs.length - 1;
-          const badgeClasses = isCurrent
-            ? 'bg-indigo-100 text-indigo-700'
-            : 'bg-slate-100 text-slate-700';
-          return (
-            <React.Fragment key={`${crumb.label}-${idx}`}>
-              <button
-                type="button"
-                className={`flex h-6 items-center rounded-full px-2.5 text-[12px] font-medium hover:brightness-95 ${badgeClasses}`}
-                onMouseEnter={(e) => handleCrumbHover(idx, e.currentTarget, crumb.title)}
-                onMouseLeave={() => setHoveredCrumb(null)}
-                title={crumb.title}
-              >
-                {crumb.label}
-              </button>
-              {idx < breadcrumbs.length - 1 && (
-                <span className="text-[12px] text-slate-400">›</span>
-              )}
-            </React.Fragment>
-          );
-        })}
-        {hoveredCrumb && hoveredCrumb.title && (
-          <div
-            className="absolute z-10 -translate-x-1/2 rounded-md border border-slate-200 bg-white px-3 py-2 text-[12px] font-normal text-slate-600 shadow-md"
-            style={{ left: hoveredCrumb.x, top: 'calc(100% + 6px)' }}
-          >
-            {hoveredCrumb.title}
-          </div>
-        )}
-      </div>
-      <button
-        type="button"
-        className="flex h-8 w-8 items-center justify-center rounded-md text-slate-500 hover:bg-slate-100 hover:text-slate-700"
-        onClick={onClose}
-        aria-label="Close"
-      >
-        <X size={16} weight="light" />
-      </button>
-    </div>
-  );
-});
 
 type ModalFieldsProps = {
   values: CreateActivityFormValues;
@@ -176,12 +107,12 @@ const ModalPickers = React.memo(function ModalPickers({
   className,
 }: ModalPickersProps) {
   return (
-    <div className={`flex flex-col gap-3 ${className ?? ''}`}>
+    <div className={`flex flex-row gap-3 ${className ?? ''}`}>
       <ModalDueDatePicker
         value={values.dueDate}
         active={dueActive}
         onChange={onDueDateChange}
-        className="w-full justify-between"
+        className="shrink-0"
       />
 
       <AssigneePicker
@@ -190,7 +121,7 @@ const ModalPickers = React.memo(function ModalPickers({
         onChange={onAssigneeChange}
         active={assigneeActive}
         placeholder="Search assignee"
-        triggerClassName="w-full justify-start"
+        triggerClassName="shrink-0"
       />
     </div>
   );
@@ -244,6 +175,9 @@ type CreateActivityModalProps = {
   createPending: boolean;
   inputRef: React.RefObject<HTMLInputElement | null>;
   assignees?: { id: string; name: string; avatarUrl?: string | null }[];
+  labSlug: string;
+  projectKey: string;
+  container?: HTMLElement | null;
 };
 
 export function CreateActivityModal({
@@ -263,8 +197,12 @@ export function CreateActivityModal({
   createPending,
   inputRef,
   assignees = [],
+  labSlug,
+  projectKey,
+  container,
 }: CreateActivityModalProps) {
   const { render, visible } = useModalVisibility(open);
+  const [mounted] = useState(() => typeof window !== 'undefined');
 
   const dueActive = !!formValues.dueDate;
   const assigneeActive = (formValues.assigneeIds ?? []).length > 0;
@@ -279,19 +217,24 @@ export function CreateActivityModal({
 
   if (!render) return null;
 
-  return (
-    <div
-      className={`fixed inset-0 z-30 flex items-center justify-center bg-black/30 p-4 transition-opacity duration-300 ease-out ${
-        visible ? 'opacity-100' : 'opacity-0'
-      }`}
-    >
+  const overlayClass = container
+    ? 'absolute inset-0 z-60 flex items-center justify-center p-4'
+    : 'fixed inset-0 z-60 flex items-center justify-center p-4';
+
+  const panel = (
+    <div className={overlayClass}>
       <div
         className={`w-full max-w-3xl rounded-2xl border border-slate-200 bg-white p-5 shadow-2xl transition-all duration-300 ease-out ${
           visible ? 'translate-y-0 scale-100 opacity-100' : 'translate-y-3 scale-95 opacity-0'
         }`}
       >
-        <ModalHeader breadcrumbs={breadcrumbs} onClose={onClose} />
-        <div className="mt-4 flex flex-col gap-6 md:flex-row">
+        <ActivityBreadcrumbs
+          breadcrumbs={breadcrumbs}
+          labSlug={labSlug}
+          projectKey={projectKey}
+          onClose={onClose}
+        />
+        <div className="mt-4 flex flex-col gap-6">
           <div className="flex-1">
             <div className="flex flex-col gap-3">
               <TypePicker value={formValues.type} onChange={onTypeChange} />
@@ -305,7 +248,7 @@ export function CreateActivityModal({
               />
             </div>
           </div>
-          <div className="md:w-48 md:border-l md:border-slate-200 md:pl-6">
+          <div>
             <ModalPickers
               values={formValues}
               dueActive={dueActive}
@@ -313,7 +256,6 @@ export function CreateActivityModal({
               assignees={assignees}
               onDueDateChange={onDueDateChange}
               onAssigneeChange={onAssigneeChange}
-              className="md:items-start"
             />
           </div>
         </div>
@@ -326,6 +268,35 @@ export function CreateActivityModal({
         />
       </div>
     </div>
+  );
+
+  const overlayTarget = mounted ? document.body : null;
+  const overlayNode =
+    overlayTarget && render
+      ? createPortal(
+          <div
+            className={`fixed inset-0 z-40 bg-black/40 transition-opacity duration-300 ease-out ${
+              visible ? 'opacity-100' : 'opacity-0'
+            }`}
+          />,
+          overlayTarget
+        )
+      : null;
+
+  if (container) {
+    return (
+      <>
+        {overlayNode}
+        {createPortal(panel, container)}
+      </>
+    );
+  }
+
+  return (
+    <>
+      {overlayNode}
+      {panel}
+    </>
   );
 }
 

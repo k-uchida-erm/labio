@@ -9,7 +9,7 @@ import ActivityListState, {
 import ActivityTree, { type ActivityTreeProps } from '@/components/activity/ActivityTree';
 import ActivitySectionHeader from '@/components/activity/ActivitySectionHeader';
 
-type ProjectMainViewProps = {
+export type ProjectMainViewProps = {
   headerProps: React.ComponentProps<typeof ProjectHeader>;
   toolbarProps: ActivityToolbarProps;
   listStateProps: ActivityListStateProps;
@@ -27,7 +27,7 @@ export function ProjectMainView({
       <ProjectHeader {...headerProps} />
       <ActivitySectionHeader />
       <ActivityToolbar {...toolbarProps} />
-      <section className="mt-2 flex flex-col gap-1 px-2">
+      <section className="mt-2 flex flex-col gap-1 px-0.5">
         <ActivityListState {...listStateProps} />
         {treeProps.showTree && <ActivityTree {...treeProps} />}
       </section>

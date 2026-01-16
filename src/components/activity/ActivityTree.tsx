@@ -1,10 +1,17 @@
 import * as React from 'react';
+import { useRouter } from 'next/navigation';
 import { ActivityItem } from './ActivityItem';
 import { ActivityStatus as RowStatus, ActivityWithTags } from '@/features/activity/types';
+import {
+  calculateAggregatedStatus,
+  normalizeActivityStatus,
+} from '@/features/activity/utils/status';
+import { CollapseSection } from '@/components/ui/CollapseSection';
 
 export type ActivityTreeProps = {
   projectKey: string;
   projectLabel?: string;
+  labSlug: string;
   parentActivities: ActivityWithTags[];
   visibleActivitiesByParent: Map<string, ActivityWithTags[]>;
   activitiesByParentAll: Map<string, ActivityWithTags[]>;
@@ -18,11 +25,15 @@ export type ActivityTreeProps = {
   onChangeStatus: (id: string, status: RowStatus) => void;
   onChangeDueDate: (id: string, date: Date | null) => void;
   getCheckboxRef: (id: string) => React.RefObject<HTMLButtonElement | null>;
+  maxDepthReachedIds?: Set<string>;
+  compactMeta?: boolean;
+  activeActivityId?: string | null;
 };
 
 export function ActivityTree({
   projectKey,
   projectLabel,
+  labSlug,
   parentActivities,
   visibleActivitiesByParent,
   activitiesByParentAll,
@@ -36,13 +47,11 @@ export function ActivityTree({
   onChangeStatus,
   onChangeDueDate,
   getCheckboxRef,
+  maxDepthReachedIds,
+  compactMeta = false,
+  activeActivityId,
 }: ActivityTreeProps) {
-  const normalizeStatus = React.useCallback((status: string | null | undefined): RowStatus => {
-    if (status === 'in_review') return 'in_progress';
-    if (status === 'todo' || status === 'in_progress' || status === 'done') return status;
-    return 'todo';
-  }, []);
-
+  const router = useRouter();
   const renderActivity = React.useMemo(() => {
     const render = (activity: ActivityWithTags, depth: number = 0): React.ReactNode => {
       const displayId = `${projectLabel ?? projectKey}-${activity.sequence_number}`;
@@ -50,24 +59,25 @@ export function ActivityTree({
       const visibleChildren = visibleActivitiesByParent.get(activity.id) || [];
       const totalSubtasks = allChildren.length;
       const completedSubtasks = allChildren.filter(
-        (a) => normalizeStatus(a.status) === 'done'
+        (a) => normalizeActivityStatus(a.status) === 'done'
       ).length;
-      const hasInProgressChild = allChildren.some(
-        (a) => normalizeStatus(a.status) === 'in_progress'
-      );
 
-      const status: RowStatus =
-        totalSubtasks === 0
-          ? normalizeStatus(activity.status)
-          : completedSubtasks === totalSubtasks
-            ? 'done'
-            : hasInProgressChild || completedSubtasks > 0
-              ? 'in_progress'
-              : 'todo';
+      const status = calculateAggregatedStatus(
+        activity.status,
+        allChildren.map((child) => child.status)
+      ) as RowStatus;
 
       const isExpanded = expandedActivityIds.has(activity.id);
       const isSubActivity = depth > 0;
       const showChildren = visibleChildren.length > 0;
+      const hasVisibleChildren = visibleChildren.length > 0;
+      const canAddChild = !(maxDepthReachedIds?.has(activity.id) ?? false);
+
+      const handleOpenDetail = () => {
+        if (activity.sequence_number) {
+          router.push(`/${labSlug}/${projectKey}?activity=${activity.sequence_number}`);
+        }
+      };
 
       return (
         <div className="flex flex-col" key={activity.id}>
@@ -80,12 +90,16 @@ export function ActivityTree({
             assigneeName={activity.assignee?.display_name || null}
             assigneeAvatarUrl={activity.assignee?.avatar_url || null}
             hasChildren={totalSubtasks > 0}
+            showChildToggle={hasVisibleChildren}
             checked={checkedActivityIds.includes(activity.id)}
             onToggleChecked={(e) => onToggleChecked(activity.id, e)}
-            onToggleChildren={() => onToggleChildren(activity.id)}
+            onToggleChildren={hasVisibleChildren ? () => onToggleChildren(activity.id) : undefined}
             onAddSubActivity={() => onAddSubActivity(activity.id)}
             onChangeStatus={(next) => onChangeStatus(activity.id, next)}
             onChangeDueDate={(dueDate) => onChangeDueDate(activity.id, dueDate)}
+            canAddSubActivity={canAddChild}
+            onClickActivity={handleOpenDetail}
+            onOpenDetails={compactMeta ? handleOpenDetail : undefined}
             checkboxRef={getCheckboxRef(activity.id)}
             isSubActivity={isSubActivity}
             isExpanded={isExpanded}
@@ -93,24 +107,23 @@ export function ActivityTree({
             showId={showKey}
             totalSubtasks={totalSubtasks}
             completedSubtasks={completedSubtasks}
+            compactMeta={compactMeta}
+            isActive={activeActivityId === activity.id}
           />
           {showChildren && (
-            <div
-              className={`grid transition-all duration-200 ease-out ${
-                isExpanded ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
-              } ${isExpanded ? 'mt-1' : 'mt-0'}`}
+            <CollapseSection
+              open={isExpanded}
+              expandedMarginTop="0.25rem"
+              collapsedMarginTop={0}
+              contentClassName={`flex flex-col gap-1 overflow-hidden ${
+                indentEnabled ? 'border-l border-slate-200' : ''
+              }`}
+              contentStyle={indentEnabled ? { marginLeft: 24, borderLeftWidth: 1 } : undefined}
             >
-              <div
-                className={`flex flex-col gap-1 overflow-hidden ${
-                  indentEnabled ? 'border-l border-slate-200' : ''
-                }`}
-                style={indentEnabled ? { marginLeft: 40, borderLeftWidth: 1 } : undefined}
-              >
-                {visibleChildren.map((subActivity) =>
-                  indentEnabled ? render(subActivity, depth + 1) : render(subActivity, 0)
-                )}
-              </div>
-            </div>
+              {visibleChildren.map((subActivity) =>
+                indentEnabled ? render(subActivity, depth + 1) : render(subActivity, 0)
+              )}
+            </CollapseSection>
           )}
         </div>
       );
@@ -123,7 +136,8 @@ export function ActivityTree({
     expandedActivityIds,
     getCheckboxRef,
     indentEnabled,
-    normalizeStatus,
+    labSlug,
+    maxDepthReachedIds,
     onAddSubActivity,
     onChangeDueDate,
     onChangeStatus,
@@ -131,8 +145,11 @@ export function ActivityTree({
     onToggleChildren,
     projectKey,
     projectLabel,
+    router,
     showKey,
     visibleActivitiesByParent,
+    compactMeta,
+    activeActivityId,
   ]);
 
   return (

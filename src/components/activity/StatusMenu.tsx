@@ -5,7 +5,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { ActivityStatus } from '@/features/activity/types';
 
 // Todo / In Progress / Done を同じサイズ感に揃える
-const STATUS_ICON_BASE_CLASS = 'h-4 w-4 transition-colors duration-150 ease-out';
+// サイズは親要素で制御するため、ここではサイズクラスを含めない
+const STATUS_ICON_BASE_CLASS = 'transition-colors duration-150 ease-out';
 
 const STATUS_ICON_VIEWBOX_SIZE = 16;
 const STATUS_ICON_OUTER_STROKE_WIDTH = 1.2;
@@ -117,14 +118,18 @@ function StatusIcon({
   status,
   totalSubtasks,
   completedSubtasks,
+  iconSize = 'sm',
 }: {
   status?: ActivityStatus;
   totalSubtasks?: number;
   completedSubtasks?: number;
+  iconSize?: 'sm' | 'md' | 'lg';
 }) {
+  const iconSizeClass =
+    iconSize === 'lg' ? 'h-5 w-5' : iconSize === 'md' ? 'h-[18px] w-[18px]' : 'h-4 w-4';
   if (status === 'done') {
     return (
-      <span className="status-pulse text-[#5769f6]" key={status}>
+      <span className={`status-pulse text-[#5769f6] ${iconSizeClass}`} key={status}>
         <DoneCircle />
       </span>
     );
@@ -148,14 +153,14 @@ function StatusIcon({
     }
 
     return (
-      <span className="status-pulse" key={status}>
+      <span className={`status-pulse ${iconSizeClass}`} key={status}>
         <ProgressCircle percent={percent} />
       </span>
     );
   }
 
   return (
-    <span className="status-pulse text-slate-400" key={status}>
+    <span className={`status-pulse text-slate-400 ${iconSizeClass}`} key={status}>
       <TodoCircle />
     </span>
   );
@@ -167,6 +172,7 @@ export type StatusMenuProps = {
   totalSubtasks?: number;
   completedSubtasks?: number;
   hasChildren?: boolean;
+  iconSize?: 'sm' | 'md' | 'lg';
 };
 
 export function StatusMenu({
@@ -175,6 +181,7 @@ export function StatusMenu({
   totalSubtasks,
   completedSubtasks,
   hasChildren = false,
+  iconSize = 'sm',
 }: StatusMenuProps) {
   const [open, setOpen] = React.useState(false);
 
@@ -186,17 +193,20 @@ export function StatusMenu({
     [onChangeStatus]
   );
 
+  const buttonSizeClass = iconSize === 'lg' ? 'h-7 w-7' : iconSize === 'md' ? 'h-6 w-6' : 'h-6 w-6';
+
   return (
     <Popover placement="right" open={open} onOpenChange={setOpen}>
       <PopoverTrigger>
         <button
           type="button"
-          className="flex h-6 w-6 items-center justify-center rounded-md hover:bg-slate-100"
+          className={`flex ${buttonSizeClass} items-center justify-center rounded-md hover:bg-slate-100`}
         >
           <StatusIcon
             status={status}
             totalSubtasks={totalSubtasks}
             completedSubtasks={completedSubtasks}
+            iconSize={iconSize}
           />
         </button>
       </PopoverTrigger>
@@ -211,7 +221,7 @@ export function StatusMenu({
             disabled={hasChildren}
           >
             <span className="flex items-center gap-2">
-              <span className="text-slate-400">
+              <span className="flex h-4 w-4 items-center justify-center text-slate-400">
                 <TodoCircle />
               </span>
               <span>Todo</span>
@@ -226,7 +236,9 @@ export function StatusMenu({
             disabled={hasChildren}
           >
             <span className="flex items-center gap-2">
-              <ProgressCircle percent={0.5} />
+              <span className="flex h-4 w-4 items-center justify-center">
+                <ProgressCircle percent={0.5} />
+              </span>
               <span>In Progress</span>
             </span>
           </button>
@@ -236,7 +248,7 @@ export function StatusMenu({
             onClick={() => handleSelectStatus('done')}
           >
             <span className="flex items-center gap-2">
-              <span className="text-[#5769f6]">
+              <span className="flex h-4 w-4 items-center justify-center text-[#5769f6]">
                 <DoneCircle />
               </span>
               <span>Done</span>
